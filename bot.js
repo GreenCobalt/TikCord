@@ -20,6 +20,16 @@ process.on('unhandledRejection', (reason, p) => {
     log.error('Unhandled Rejection: ', reason, p);
 });
 
+process.on('uncaughtException', function (err) {
+    log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
+
+    let lines = err.stack.split("\n");
+    lines.forEach((l) => {
+        log.error(l);
+    });
+    process.exit(1);
+});
+
 //discord bot
 
 let dlS = 0, dlF = 0;
