@@ -10,7 +10,7 @@ const puppeteer = require('puppeteer');
 const log = require("./log.js");
 //const jssoup = require('jssoup').default;
 
-let linkRegex = new RegExp('(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\/|tiktok\.com\/@(.*[\/]))(?<path>[^\s]+))', "gm");
+let linkRegex = new RegExp('(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\/|tiktok\.com\/@(.*[\/]))(?<path>[^\s]+))');
 const request = async (url, config = {}) => await (await axios.get(url, config));
 const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data).catch((e) => { log.info(e) });
 
