@@ -18,7 +18,7 @@ function info(message) {
 }
 
 function debug(message) {
-    console.log("[" + Date.now() + "] " + "[DBG] " + message);
+    //console.log("[" + Date.now() + "] " + "[DBG] " + message);
     logFile.write("[" + Date.now() + "] " + "[DBG] " + message + '\n');
 }
 
