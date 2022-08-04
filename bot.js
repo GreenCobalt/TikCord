@@ -77,11 +77,13 @@ client.on('messageCreate', (message) => {
                     message.reply({ files: [resp] }).then(() => {
                         log.info("Message sent, deleting " + resp);
                         fs.unlinkSync(resp);
+                        dlS++;
                     });
                 })
                 .catch((error) => {
                     message.reply(`Could not download video: ${e}`);
                     log.info(`Could not download video: ${e}`);
+                    dlF++;
                 });
 
             /*
@@ -113,6 +115,7 @@ client.on('messageCreate', (message) => {
             .catch((e) => {
                 message.reply(`Could not download video: ${e}`);
                 log.info(`Could not download video: ${e}`);
+                dlF++;
             });
     }
 });
@@ -122,17 +125,19 @@ client.on('messageCreate', (message) => {
 function updateManager() {
     let guilds = client.guilds.cache;
 
-
-
     let servers = guilds.size;
     let users = 0;
     guilds.forEach((g) => {
         users += g.memberCount;
     });
 
-    let url = `http://localhost:8601/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`;
+    //let url = `http://localhost:8601/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`;
+    let url = `http://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`;
     request(url)
-        .then((resp) => { })
+        .then((resp) => {
+            log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
+            client.user.setPresence({ activities: [{ name: `${resp.data.servers} servers`, type: 3 }], status: 'online' });
+        })
         .catch((error) => {
             log.warn(`Failed to send stats to mananger: ${error}`);
         });
