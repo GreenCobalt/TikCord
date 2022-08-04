@@ -17,7 +17,7 @@ const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(
 //process setup
 
 process.on('unhandledRejection', (reason, p) => {
-    log.error('Unhandled Rejection: ', reason);
+    log.error('Unhandled Rejection: ', reason, p);
 });
 
 //discord bot
@@ -272,4 +272,4 @@ function promisifyCommand(command) {
     })
 }
 
-client.login('OTg4OTA1MDY2MDQxODUxOTk0.GmIV6Q.ZqCdZTB0nU91E4izuLKW8i7ag_F9cAxQ_8PzjQ');
+client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.YhZ5Iw.irFGSrHQI7j-1SaOYsZu4YbeydI');
