@@ -27,7 +27,8 @@ process.on('uncaughtException', function (err) {
     lines.forEach((l) => {
         log.error(l);
     });
-    process.exit(1);
+    
+    restartBot();
 });
 
 //discord bot
@@ -45,6 +46,15 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'ping') {
         await interaction.reply('Pong!');
+    } else if (interaction.commandName === 'help') {
+        await interaction.reply('Just send a TikTok link and the bot will automatically download and send it in the chat!');
+    } else if (interaction.commandName === 'restart') {
+        if (interaction.user.id === 441040161589952562) {
+            await interaction.reply('Restarting bot!');
+            restartBot();
+        } else {
+            await interaction.reply('You do not have permission to do that!');
+        }
     }
 });
 
@@ -285,6 +295,24 @@ function promisifyCommand(command) {
             .on('error', (error) => { cb(error) })
             .run()
     })
+}
+
+function restartBot() {
+    setTimeout(function () {
+        process.on("exit", function () {
+          require("child_process")
+            .spawn(
+              process.argv.shift(),
+              process.argv,
+              {
+                cwd: process.cwd(),
+                detached: true,
+                stdio: "inherit"
+              }
+            );
+        });
+        process.exit();
+    }, 1000);
 }
 
 client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.YhZ5Iw.irFGSrHQI7j-1SaOYsZu4YbeydI');
