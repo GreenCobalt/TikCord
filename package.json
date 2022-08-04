@@ -1,0 +1,22 @@
+{
+  "name": "tiktokbotjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "bluebird": "^3.7.2",
+    "discord.js": "^14.1.2",
+    "ffmpeg-probe": "^1.0.6",
+    "fluent-ffmpeg": "^2.1.2",
+    "jssoup": "^0.0.15",
+    "puppeteer": "^16.0.0",
+    "puppeteer-har": "^1.1.2",
+    "yakbak": "^5.0.1"
+  }
+}
