@@ -70,6 +70,9 @@ client.on('messageCreate', (message) => {
         }
         log.info(`Initiating download on ${rgx.groups.url}`);
 
+        //start typing, ignore errors
+        message.channel.sendTyping().catch((e) => {});
+
         new Promise((res, rej) => {
             if (rgx.groups.domain.includes("vm.tiktok.com") || rgx.groups.domain.includes("vt.tiktok.com") || rgx.groups.url.includes("/t/")) {
                 request(rgx.groups.url, {
@@ -90,7 +93,6 @@ client.on('messageCreate', (message) => {
             }
         }).then((url) => {
             log.info(`Downloading ${url}`);
-            message.channel.sendTyping();
 
             downloadVideo(url)
                 .then((resp) => {
