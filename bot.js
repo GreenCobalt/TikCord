@@ -98,6 +98,8 @@ client.on('messageCreate', (message) => {
                         log.info("Message sent, deleting " + resp);
                         fs.unlinkSync(resp);
                         dlS++;
+                    }).catch((e) => {
+                        log.error("Error sending message: " + e);
                     });
                 })
                 .catch((error) => {
