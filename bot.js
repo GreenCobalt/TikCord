@@ -99,7 +99,9 @@ client.on('messageCreate', (message) => {
                         fs.unlinkSync(resp);
                         dlS++;
                     }).catch((e) => {
-                        log.error("Error sending message: " + e);
+                        log.error(`Error sending message: ${e}, deleting ${resp}`);
+                        fs.unlinkSync(resp);
+                        dlF++;
                     });
                 })
                 .catch((error) => {
