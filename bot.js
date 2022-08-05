@@ -296,7 +296,6 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
 }
 
 function restartBot() {
-    /*
     setTimeout(function () {
         process.on("exit", function () {
             require("child_process")
@@ -312,7 +311,6 @@ function restartBot() {
         });
         process.exit();
     }, 1000);
-    */
 }
 
 client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.YhZ5Iw.irFGSrHQI7j-1SaOYsZu4YbeydI');
