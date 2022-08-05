@@ -5,7 +5,6 @@ const axios = require('axios');
 const fs = require("fs");
 const ffmpeg = require('fluent-ffmpeg');
 const ffprobe = require('ffmpeg-probe');
-const bluebird = require('bluebird');
 const puppeteer = require('puppeteer');
 const log = require("./log.js");
 //const jssoup = require('jssoup').default;
@@ -27,7 +26,7 @@ process.on('uncaughtException', function (err) {
     lines.forEach((l) => {
         log.error(l);
     });
-    
+
     restartBot();
 });
 
@@ -71,7 +70,7 @@ client.on('messageCreate', (message) => {
         log.info(`Initiating download on ${rgx.groups.url}`);
 
         //start typing, ignore errors
-        message.channel.sendTyping().catch((e) => {});
+        message.channel.sendTyping().catch((e) => { });
 
         new Promise((res, rej) => {
             if (rgx.groups.domain.includes("vm.tiktok.com") || rgx.groups.domain.includes("vt.tiktok.com") || rgx.groups.url.includes("/t/")) {
@@ -191,12 +190,14 @@ function getTikTokData(url) {
                 page.setViewport({ width: 1600, height: 900 }).then(() => {
                     page.setRequestInterception(true).then(() => {
                         let requestAborted = false;
+                        let goodURL;
                         page.on('request', request => {
                             if (requestAborted == false) {
                                 if (request.resourceType() === 'media') {
                                     requestAborted = true;
-                                    page.evaluate(() => window.stop());
-                                    res(request.url());
+                                    page.evaluate(() => window.stop()).then(() => {
+                                        goodURL = request.url();
+                                    });
                                 } else {
                                     request.continue();
                                 }
@@ -204,10 +205,15 @@ function getTikTokData(url) {
                                 request.abort();
                             }
                         });
-                        page.goto(url, { waitUntil: "networkidle0" }).catch((error) => {
-                            log.info(error);
-                            rej("NOTFOUND");
-                        });
+                        page.goto(url, { waitUntil: "networkidle2" })
+                            .then(() => {
+                                browser.close();
+                                res(goodURL);
+                            })
+                            .catch((error) => {
+                                log.info(error);
+                                rej("NOTFOUND");
+                            });
                     });
                 });
             });
@@ -247,7 +253,7 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
     let max_audio_bitrate = 256000;
 
     return new Promise((res, rej) => {
-        ffprobe(videoInputPath).then((probeOut) => {
+        ffmpeg.ffprobe(videoInputPath, (err, probeOut) => {
             if (probeOut.format.size > 8 * 1000 * 1000) {
                 //too big
                 log.info(`Encoding ${videoInputPath} to under 8MB`);
@@ -266,24 +272,19 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
                 }
                 let videoBitrate = targetTotalBitrate - audioBitrate;
 
-                let ffmpegCommand = ffmpeg(videoInputPath, { logger: log })
+                ffmpeg(videoInputPath, { logger: log })
                     .outputOptions([
                         '-b:v ' + videoBitrate,
                         '-b:a ' + audioBitrate,
                         '-preset ultrafast'
                     ])
-                    .output(videoOutputPath);
-
-                command = promisifyCommand(ffmpegCommand)
-                command()
-                    .then(() => {
+                    .on('error', rej)
+                    .on('end', () => {
                         fs.unlinkSync(videoInputPath);
                         log.info(`Encode done`);
                         res(videoOutputPath);
                     })
-                    .catch((error) => {
-                        rej(error);
-                    })
+                    .save(videoOutputPath);
             } else {
                 //small enough
                 log.info(`Not encoding ${videoInputPath}, already small enough`);
@@ -294,31 +295,24 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
     });
 }
 
-function promisifyCommand(command) {
-    return bluebird.promisify((cb) => {
-        command
-            .on('end', () => { cb(null) })
-            .on('error', (error) => { cb(error) })
-            .run()
-    })
-}
-
 function restartBot() {
+    /*
     setTimeout(function () {
         process.on("exit", function () {
-          require("child_process")
-            .spawn(
-              process.argv.shift(),
-              process.argv,
-              {
-                cwd: process.cwd(),
-                detached: true,
-                stdio: "inherit"
-              }
-            );
+            require("child_process")
+                .spawn(
+                    process.argv.shift(),
+                    process.argv,
+                    {
+                        cwd: process.cwd(),
+                        detached: true,
+                        stdio: "inherit"
+                    }
+                );
         });
         process.exit();
     }, 1000);
+    */
 }
 
 client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.YhZ5Iw.irFGSrHQI7j-1SaOYsZu4YbeydI');
