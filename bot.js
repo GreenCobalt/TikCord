@@ -4,7 +4,6 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const axios = require('axios');
 const fs = require("fs");
 const ffmpeg = require('fluent-ffmpeg');
-const ffprobe = require('ffmpeg-probe');
 const puppeteer = require('puppeteer');
 const log = require("./log.js");
 //const jssoup = require('jssoup').default;
