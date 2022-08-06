@@ -81,7 +81,11 @@ client.on('messageCreate', (message) => {
                 })
                     .then((resp) => {
                         log.info(`Redirect to ${resp.request.res.responseUrl}`)
-                        res(resp.request.res.responseUrl.split("?")[0]);
+                        if (resp.request.res.responseurl == "https://www.tiktok.com/") {
+                            rej("NOTFOUND");
+                        } else {
+                            res(resp.request.res.responseUrl.split("?")[0]);
+                        }
                     })
                     .catch((error) => {
                         rej(`NOTFOUND`);
