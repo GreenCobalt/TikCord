@@ -91,7 +91,11 @@ client.on('messageCreate', (message) => {
                 })
                     .then((resp) => {
                         log.info(`Redirect to ${resp.request.res.responseUrl}`)
-                        res(resp.request.res.responseUrl.split("?")[0]);
+                        if (resp.request.res.responseurl == "https://www.tiktok.com/") {
+                            rej("NOTFOUND");
+                        } else {
+                            res(resp.request.res.responseUrl.split("?")[0]);
+                        }
                     })
                     .catch((error) => {
                         rej(`NOTFOUND`);
@@ -105,13 +109,25 @@ client.on('messageCreate', (message) => {
             downloadVideo(url)
                 .then((resp) => {
                     message.reply({ files: [resp] }).then(() => {
-                        log.info("Message sent, deleting " + resp);
+                        log.info("Message sent (reply), deleting " + resp);
                         fs.unlinkSync(resp);
                         dlS++;
                     }).catch((e) => {
-                        log.error(`Error sending message: ${e}, deleting ${resp}`);
-                        fs.unlinkSync(resp);
-                        dlF++;
+                        if (e.code == 50035) {
+                            message.channel.send({ files: [resp] }).then(() => {
+                                log.info("Message sent (channel), deleting " + resp);
+                                fs.unlinkSync(resp);
+                                dlS++;
+                            }).catch((e) => {
+                                log.error(`Error sending message: ${e}, deleting ${resp}`);
+                                fs.unlinkSync(resp);
+                                dlF++;
+                            });
+                        } else {
+                            log.error(`Error sending message: ${e}, deleting ${resp}`);
+                            fs.unlinkSync(resp);
+                            dlF++;
+                        }
                     });
                 })
                 .catch((error) => {
