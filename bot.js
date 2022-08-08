@@ -12,11 +12,21 @@ let linkRegex = /(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\
 const request = async (url, config = {}) => await (await axios.get(url, config));
 const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data).catch((e) => { log.info(e) });
 
+const token = process.env.token;
+
 //process setup
 
-process.on('unhandledRejection', (reason, p) => {
-    log.error('Unhandled Rejection: ', reason, p);
-});
+//process.on('unhandledRejection', (reason, p) => {
+//    log.error('Unhandled Rejection: ', reason, p);
+//});
+
+if (!fs.existsSync("./videos/")){
+    fs.mkdirSync("./videos/");
+}
+
+if (!fs.existsSync("./logs/")){
+    fs.mkdirSync("./logs/");
+}
 
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
@@ -312,4 +322,4 @@ function restartBot() {
     }, 1000);
 }
 
-client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.YhZ5Iw.irFGSrHQI7j-1SaOYsZu4YbeydI');
+client.login(token);
