@@ -31,15 +31,15 @@ if (!fs.existsSync("./logs/")) {
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
 
-	try {
-		let lines = err.stack.split("\n");
-		lines.forEach((l) => {
-			log.error(l);
-		});
-	} catch (e) {
-		log.error("Error formatting error:", e);
-		log.error(err.stack);
-	}
+    try {
+        let lines = err.stack.split("\n");
+        lines.forEach((l) => {
+            log.error(l);
+        });
+    } catch (e) {
+        log.error("Error formatting error:", e);
+        log.error(err.stack);
+    }
 
     restartBot();
 });
@@ -143,15 +143,14 @@ client.on('messageCreate', (message) => {
                     });
                 })
                 .catch((error) => {
+                    message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
+                        log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
+                    });
                     log.info(`Could not download video: ${e}`);
-
+    
                     if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                     dlFReasons[e.toString()]++;
                     dlF++;
-
-                    message.reply(`Could not download video: ${e}`).then(() => {}).catch((e) => {
-                      log.debug(`Count not send video download failure message: ${e.toString()}`);  
-                    });
                 });
 
             /*
@@ -181,7 +180,9 @@ client.on('messageCreate', (message) => {
                 */
         })
             .catch((e) => {
-                message.reply(`Could not download video: ${e}`);
+                message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
+                    log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
+                });
                 log.info(`Could not download video: ${e}`);
 
                 if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
@@ -202,14 +203,14 @@ function updateManager() {
         users += g.memberCount;
     });
 
-	axios.post('https://manager.snadol.com/discordUF?type=tiktok&uid=946107355316252763', {reasons: dlFReasons}, {headers: {'content-type': 'application/json'}})
-		.then((res) => {
-			log.debug(`Sent download failure stats to manager: ${JSON.stringify(dlFReasons)}`);
-		})
+    axios.post('https://manager.snadol.com/discordUF?type=tiktok&uid=946107355316252763', { reasons: dlFReasons }, { headers: { 'content-type': 'application/json' } })
+        .then((res) => {
+            log.debug(`Sent download failure stats to manager: ${JSON.stringify(dlFReasons)}`);
+        })
         .catch((error) => {
             log.warn(`Failed to send stats to mananger: ${error}`);
         });
-	
+
     request(`https://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`)
         .then((resp) => {
             log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
