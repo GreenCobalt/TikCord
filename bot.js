@@ -199,7 +199,9 @@ function updateManager() {
             log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
             client.user.setPresence({ activities: [{ name: `${resp.data.servers} servers`, type: 3 }], status: 'online' });
 
-            axios.post('http://manager.snadol.com/discordUF?type=tiktok&id=main', dlFReasons)
+            axios.post('http://manager.snadol.com/discordUF?type=tiktok&id=main', {
+                reasons: dlFReasons
+            })
                 .then(function (response) {
                     log.debug(`Sent download failure stats to manager.`);
                 })
