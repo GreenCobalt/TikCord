@@ -31,10 +31,15 @@ if (!fs.existsSync("./logs/")) {
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
 
-    let lines = err.stack.split("\n");
-    lines.forEach((l) => {
-        log.error(l);
-    });
+	try {
+		let lines = err.stack.split("\n");
+		lines.forEach((l) => {
+			log.error(l);
+		});
+	} catch (e) {
+		log.error("Error formatting error:", e);
+		log.error(err.stack);
+	}
 
     restartBot();
 });
@@ -194,20 +199,19 @@ function updateManager() {
         users += g.memberCount;
     });
 
-    request(`http://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`)
+	axios.post('https://manager.snadol.com/discordUF?type=tiktok&uid=946107355316252763', {reasons: dlFReasons}, {headers: {'content-type': 'application/json'}})
+		.then((res) => {
+			log.debug(`Sent download failure stats to manager: ${JSON.stringify(dlFReasons)}`);
+		})
+        .catch((error) => {
+            log.warn(`Failed to send stats to mananger: ${error}`);
+        });
+	
+    request(`https://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`)
         .then((resp) => {
             log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
             client.user.setPresence({ activities: [{ name: `${resp.data.servers} servers`, type: 3 }], status: 'online' });
 
-            axios.post('http://manager.snadol.com/discordUF?type=tiktok&id=main', {
-                reasons: dlFReasons
-            })
-                .then(function (response) {
-                    log.debug(`Sent download failure stats to manager.`);
-                })
-                .catch(function (error) {
-                    log.warn(`Failed to send download failure stats to mananger: ${error}`);
-                });
         })
         .catch((error) => {
             log.warn(`Failed to send stats to mananger: ${error}`);
