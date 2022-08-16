@@ -125,19 +125,19 @@ client.on('messageCreate', (message) => {
                                 fs.unlinkSync(resp);
                                 dlS++;
                             }).catch((e) => {
-                                log.error(`Error sending message: ${e}, deleting ${resp}`);
+                                log.error(`Error sending message (2): ${e.toString()}, deleting ${resp}`);
                                 fs.unlinkSync(resp);
 
-                                if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
-                                else dlFReasons[e]++;
+                                if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                                dlFReasons[e.toString()]++;
                                 dlF++;
                             });
                         } else {
-                            log.error(`Error sending message: ${e}, deleting ${resp}`);
+                            log.error(`Error sending message (1): ${e}, deleting ${resp}`);
                             fs.unlinkSync(resp);
 
-                            if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
-                            else dlFReasons[e]++;
+                            if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                            dlFReasons[e.toString()]++;
                             dlF++;
                         }
                     });
@@ -146,8 +146,8 @@ client.on('messageCreate', (message) => {
                     message.reply(`Could not download video: ${e}`);
                     log.info(`Could not download video: ${e}`);
 
-                    if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
-                    else dlFReasons[e]++;
+                    if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                    dlFReasons[e.toString()]++;
                     dlF++;
                 });
 
@@ -181,8 +181,8 @@ client.on('messageCreate', (message) => {
                 message.reply(`Could not download video: ${e}`);
                 log.info(`Could not download video: ${e}`);
 
-                if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
-                else dlFReasons[e]++;
+                if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                dlFReasons[e.toString()]++;
                 dlF++;
             });
     }
