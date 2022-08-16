@@ -328,4 +328,4 @@ function restartBot() {
     }, 1000);
 }
 
-client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.YhZ5Iw.irFGSrHQI7j-1SaOYsZu4YbeydI');
+client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.GAf1al.8ITfM1hCSz4karAc2ZBc0tsXoXaQUH9vWAoaYI');
