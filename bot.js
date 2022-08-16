@@ -12,11 +12,21 @@ let linkRegex = /(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\
 const request = async (url, config = {}) => await (await axios.get(url, config));
 const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data).catch((e) => { log.info(e) });
 
+const token = process.env.token;
+
 //process setup
 
-process.on('unhandledRejection', (reason, p) => {
-    log.error('Unhandled Rejection: ', reason, p);
-});
+//process.on('unhandledRejection', (reason, p) => {
+//    log.error('Unhandled Rejection: ', reason, p);
+//});
+
+if (!fs.existsSync("./videos/")) {
+    fs.mkdirSync("./videos/");
+}
+
+if (!fs.existsSync("./logs/")) {
+    fs.mkdirSync("./logs/");
+}
 
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
@@ -32,6 +42,7 @@ process.on('uncaughtException', function (err) {
 //discord bot
 
 let dlS = 0, dlF = 0;
+let dlFReasons = {};
 
 client.on('ready', () => {
     log.info(`Logged in as ${client.user.tag}!`);
@@ -111,11 +122,17 @@ client.on('messageCreate', (message) => {
                             }).catch((e) => {
                                 log.error(`Error sending message: ${e}, deleting ${resp}`);
                                 fs.unlinkSync(resp);
+
+                                if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
+                                else dlFReasons[e]++;
                                 dlF++;
                             });
                         } else {
                             log.error(`Error sending message: ${e}, deleting ${resp}`);
                             fs.unlinkSync(resp);
+
+                            if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
+                            else dlFReasons[e]++;
                             dlF++;
                         }
                     });
@@ -123,6 +140,9 @@ client.on('messageCreate', (message) => {
                 .catch((error) => {
                     message.reply(`Could not download video: ${e}`);
                     log.info(`Could not download video: ${e}`);
+
+                    if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
+                    else dlFReasons[e]++;
                     dlF++;
                 });
 
@@ -155,6 +175,9 @@ client.on('messageCreate', (message) => {
             .catch((e) => {
                 message.reply(`Could not download video: ${e}`);
                 log.info(`Could not download video: ${e}`);
+
+                if (!Object.keys(dlFReasons).includes(e)) dlFReasons[e] = 1;
+                else dlFReasons[e]++;
                 dlF++;
             });
     }
@@ -171,12 +194,18 @@ function updateManager() {
         users += g.memberCount;
     });
 
-    //let url = `http://localhost:8601/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`;
-    let url = `http://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`;
-    request(url)
+    request(`http://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`)
         .then((resp) => {
             log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
             client.user.setPresence({ activities: [{ name: `${resp.data.servers} servers`, type: 3 }], status: 'online' });
+
+            axios.post('http://manager.snadol.com/discordUF?type=tiktok&id=main', dlFReasons)
+                .then(function (response) {
+                    log.debug(`Sent download failure stats to manager.`);
+                })
+                .catch(function (error) {
+                    log.warn(`Failed to send download failure stats to mananger: ${error}`);
+                });
         })
         .catch((error) => {
             log.warn(`Failed to send stats to mananger: ${error}`);

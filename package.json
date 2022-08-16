@@ -4,18 +4,14 @@
   "description": "",
   "main": "bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.27.2",
-    "bluebird": "^3.7.2",
     "discord.js": "^14.1.2",
     "fluent-ffmpeg": "^2.1.2",
-    "jssoup": "^0.0.15",
-    "puppeteer": "^16.0.0",
-    "puppeteer-har": "^1.1.2",
-    "yakbak": "^5.0.1"
+    "puppeteer": "^16.0.0"
   }
 }
