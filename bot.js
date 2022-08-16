@@ -143,14 +143,15 @@ client.on('messageCreate', (message) => {
                     });
                 })
                 .catch((error) => {
-                    message.reply(`Could not download video: ${e}`).catch((e) => {
-                      log.debug(`Count not send video download failure message: ${e.toString()}`);  
-                    });
                     log.info(`Could not download video: ${e}`);
 
                     if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                     dlFReasons[e.toString()]++;
                     dlF++;
+
+                    message.reply(`Could not download video: ${e}`).then(() => {}).catch((e) => {
+                      log.debug(`Count not send video download failure message: ${e.toString()}`);  
+                    });
                 });
 
             /*
