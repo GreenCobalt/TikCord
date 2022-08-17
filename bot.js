@@ -335,7 +335,7 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
                     .outputOptions([
                         '-b:v ' + videoBitrate,
                         '-b:a ' + audioBitrate,
-                        '-preset ultrafast'
+                        '-preset ultrafast',
                     ])
                     .on('error', rej)
                     .on('end', () => {
