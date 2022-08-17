@@ -37,11 +37,11 @@ process.on('uncaughtException', function (err) {
             log.error(l);
         });
     } catch (e) {
-        log.error("Error formatting error:", e);
+        log.error("Error formatting error");
         log.error(err.stack);
     }
 
-    restartBot();
+    //restartBot();
 });
 
 //discord bot
@@ -142,7 +142,7 @@ client.on('messageCreate', (message) => {
                         }
                     });
                 })
-                .catch((error) => {
+                .catch((e) => {
                     message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
                         log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
                     });
@@ -232,69 +232,74 @@ function randomAZ(n = 5) {
 
 function getTikTokData(url) {
     return new Promise((res, rej) => {
-        puppeteer.launch({
-            headless: true,
-            devtools: false,
-            ignoreHTTPSErrors: true,
-            args: [
-                '--no-sandbox'
-            ]
-        }).then((browser) => {
-            browser.newPage().then((page) => {
-                page.setViewport({ width: 1600, height: 900 }).then(() => {
-                    page.setRequestInterception(true).then(() => {
-                        let requestAborted = false;
-                        let goodURL;
-                        page.on('request', request => {
-                            if (requestAborted == false) {
-                                if (request.resourceType() === 'media') {
-                                    requestAborted = true;
-                                    page.evaluate(() => window.stop()).then(() => {
-                                        goodURL = request.url();
-                                    });
-                                } else {
-                                    request.continue();
-                                }
-                            } else {
-                                request.abort();
-                            }
-                        });
-                        page.goto(url, { waitUntil: "networkidle2" })
-                            .then(() => {
-                                browser.close();
-                                res(goodURL);
-                            })
-                            .catch((error) => {
-                                log.info(error);
-                                rej("NOTFOUND");
-                            });
-                    });
-                });
-            });
-        });
-    });
+		puppeteer.launch({
+			headless: true,
+			devtools: false,
+			ignoreHTTPSErrors: true,
+			args: [
+				'--no-sandbox',
+				'--proxy-server=socks5://127.0.0.1:8080'
+			]
+		}).then((browser) => {
+			browser.newPage().then((page) => {
+				page.setViewport({ width: 1600, height: 900 }).then(() => {
+					page.setRequestInterception(true).then(() => {
+						let requestAborted = false;
+						let goodURL;
+						page.on('request', request => {
+							if (requestAborted == false) {
+								if (request.resourceType() === 'media') {
+									requestAborted = true;
+									page.evaluate(() => window.stop()).then(() => {
+										goodURL = request.url();
+									});
+								} else {
+									request.continue();
+								}
+							} else {
+								request.abort();
+							}
+						});
+						page.goto(url, { waitUntil: "networkidle2" })
+							.then(() => {
+								res(goodURL);
+								browser.close();
+							})
+							.catch((error) => {
+								log.info(error);
+								rej("NOTFOUND@1");
+							});
+					});
+				});
+			});
+		});
+	});
 }
 
 function downloadVideo(url) {
     return new Promise((res, rej) => {
         getTikTokData(url)
             .then((vidURL) => {
-                let id = url.split("?")[0].split("/")[5];
-                let randomName = randomAZ();
-                let name = `./videos/${id}_${randomName}_encode.mp4`;
+				if (vidURL == undefined) {
+					rej("NOTFOUND@2");
+				} else {
+					let id = url.split("?")[0].split("/")[5];
+					let randomName = randomAZ();
+					let name = `./videos/${id}_${randomName}_encode.mp4`;
 
-                getURLContent(vidURL).then((content) => {
-                    fs.writeFileSync(name, content);
-                    log.info(`Downloaded successfully to ${name}`);
+					getURLContent(vidURL).then((content) => {
+						fs.writeFileSync(name, content);
+						log.info(`Downloaded successfully to ${name}`);
 
-                    compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500)
-                        .then((compressedName) => {
-                            res(compressedName);
-                        })
-                        .catch((e) => {
-                            log.error(e);
-                        });
-                }).catch((e) => { });
+						compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500)
+							.then((compressedName) => {
+								res(compressedName);
+							})
+							.catch((e) => {
+								log.error(e);
+							});
+					}).catch((e) => { });
+				}
             })
             .catch(error => {
                 rej(error);
