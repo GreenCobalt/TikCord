@@ -291,9 +291,15 @@ function downloadVideo(url) {
 						fs.writeFileSync(name, content);
 						log.info(`Downloaded successfully to ${name}`);
 
-						compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500)
+						compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500, 1)
 							.then((compressedName) => {
-								res(compressedName);
+                                compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500, 2)
+                                    .then((compressedName) => {
+								        res(compressedName);
+                                    })
+                                    .catch((e) => {
+                                        log.error(e);
+                                    });
 							})
 							.catch((e) => {
 								log.error(e);
@@ -307,7 +313,7 @@ function downloadVideo(url) {
     });
 }
 
-function compressVideo(videoInputPath, videoOutputPath, targetSize) {
+function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
     let min_audio_bitrate = 32000;
     let max_audio_bitrate = 256000;
 
@@ -315,11 +321,11 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
         ffmpeg.ffprobe(videoInputPath, (err, probeOut) => {
             if (probeOut.format.size > 8 * 1000 * 1000) {
                 //too big
-                log.info(`Encoding ${videoInputPath} to under 8MB`);
+                log.info(`Encoding ${videoInputPath} to under 8MB (pass ${pass})`);
 
                 let duration = probeOut.format.duration;
                 let audioBitrate = probeOut.streams[1].bit_rate;
-                let targetTotalBitrate = (targetSize * 1024 * 8) / (1.073741824 * duration);
+                let targetTotalBitrate = (targetSize * 1000 * 8) / (1.073741824 * duration);
 
                 //log.info(`Initial size: ${probeOut.format.size / 1000 / 1000}MB, expected output size: ${targetTotalBitrate * duration / 8 / 1000 / 1000}MB`);
 
@@ -340,13 +346,13 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
                     .on('error', rej)
                     .on('end', () => {
                         fs.unlinkSync(videoInputPath);
-                        log.info(`Encode done`);
+                        log.info(`Encode done (pass ${pass})`);
                         res(videoOutputPath);
                     })
                     .save(videoOutputPath);
             } else {
                 //small enough
-                log.info(`Not encoding ${videoInputPath}, already small enough`);
+                log.info(`Not encoding ${videoInputPath} (pass ${pass}), already small enough (${probeOut.format.size / 8 / 1000}KB)`);
                 fs.renameSync(videoInputPath, videoOutputPath)
                 res(videoOutputPath);
             }
