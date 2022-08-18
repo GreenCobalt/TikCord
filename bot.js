@@ -3,10 +3,13 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 
 const axios = require('axios');
 const fs = require("fs");
+const ffmpegPath = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const puppeteer = require('puppeteer');
 const log = require("./log.js");
 //const jssoup = require('jssoup').default;
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 let linkRegex = /(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\/|tiktok\.com\/@(.*[\/]))(?<path>[^\s]+))/;
 const request = async (url, config = {}) => await (await axios.get(url, config));
@@ -323,7 +326,7 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
 
                 //log.info(`Initial size: ${probeOut.format.size / 1000 / 1000}MB, expected output size: ${targetTotalBitrate * duration / 8 / 1000 / 1000}MB`);
 
-                let wantedCodecs = [(probeOut.streams[0].codec_name == "h264" ? "copy" : "libx264"), (probeOut.streams[1].codec_name == "aac" ? "copy" : "aac")];
+                let wantedCodecs = [(probeOut.streams[0].codec_name == "h264" ? "copy" : "h264_nvenc"), (probeOut.streams[1].codec_name == "aac" ? "copy" : "aac")];
 
                 if (10 * audioBitrate > targetTotalBitrate) {
                     audioBitrate = targetTotalBitrate / 10;
@@ -335,7 +338,9 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize) {
                     .outputOptions([
                         '-b:v ' + videoBitrate,
                         '-b:a ' + audioBitrate,
-                        '-preset ultrafast',
+						'-c:v ' + wantedCodecs[0],
+						'-c:a ' + wantedCodecs[1],
+						'-preset ultrafast'
                     ])
                     .on('error', rej)
                     .on('end', () => {
