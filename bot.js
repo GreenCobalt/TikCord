@@ -9,7 +9,7 @@ const puppeteer = require('puppeteer');
 const log = require("./log.js");
 //const jssoup = require('jssoup').default;
 
-ffmpeg.setFfmpegPath(ffmpegPath);
+//ffmpeg.setFfmpegPath(ffmpegPath);
 
 let linkRegex = /(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\/|tiktok\.com\/@(.*[\/]))(?<path>[^\s]+))/;
 const request = async (url, config = {}) => await (await axios.get(url, config));
@@ -288,21 +288,24 @@ function downloadVideo(url) {
 				} else {
 					let id = url.split("?")[0].split("/")[5];
 					let randomName = randomAZ();
-					let name = `./videos/${id}_${randomName}_encode.mp4`;
+					
+					let ogName = `./videos/${id}_${randomName}_encode.mp4`;
+					let pass1Name = `./videos/${id}_${randomName}_pass1.mp4`;
+					let pass2Name = `./videos/${id}_${randomName}.mp4`;
 
 					getURLContent(vidURL).then((content) => {
-						fs.writeFileSync(name, content);
-						log.info(`Downloaded successfully to ${name}`);
+						fs.writeFileSync(ogName, content);
+						log.info(`Downloaded successfully to ${ogName}`);
 
-						compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500, 1)
+						compressVideo(ogName, pass1Name, 8, 1)
 							.then((compressedName) => {
-                                compressVideo(name, `./videos/${id}_${randomName}.mp4`, 7500, 2)
-                                    .then((compressedName) => {
+                                //compressVideo(pass1Name, pass2Name, 8, 2)
+                                //    .then((compressedName) => {
 								        res(compressedName);
-                                    })
-                                    .catch((e) => {
-                                        log.error(e);
-                                    });
+                                //    })
+                                //    .catch((e) => {
+                                //        log.error(e);
+                                //    });
 							})
 							.catch((e) => {
 								log.error(e);
@@ -322,17 +325,13 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
 
     return new Promise((res, rej) => {
         ffmpeg.ffprobe(videoInputPath, (err, probeOut) => {
-            if (probeOut.format.size > 8 * 1000 * 1000) {
+            if (probeOut.format.size > 8 * 1048576) {
                 //too big
-                log.info(`Encoding ${videoInputPath} to under 8MB (pass ${pass})`);
+                log.info(`Encoding ${videoInputPath} to under 8MB (pass ${pass}), current size ${probeOut.format.size / 1048576}MB`);
 
                 let duration = probeOut.format.duration;
                 let audioBitrate = probeOut.streams[1].bit_rate;
-                let targetTotalBitrate = (targetSize * 1000 * 8) / (1.073741824 * duration);
-
-                //log.info(`Initial size: ${probeOut.format.size / 1000 / 1000}MB, expected output size: ${targetTotalBitrate * duration / 8 / 1000 / 1000}MB`);
-
-                let wantedCodecs = [(probeOut.streams[0].codec_name == "h264" ? "copy" : "h264_nvenc"), (probeOut.streams[1].codec_name == "aac" ? "copy" : "aac")];
+                let targetTotalBitrate = (targetSize * 8388608) /* size in bits */ / (1.1 * duration);
 
                 if (10 * audioBitrate > targetTotalBitrate) {
                     audioBitrate = targetTotalBitrate / 10;
@@ -344,20 +343,23 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
                     .outputOptions([
                         '-b:v ' + videoBitrate,
                         '-b:a ' + audioBitrate,
-						'-c:v ' + wantedCodecs[0],
-						'-c:a ' + wantedCodecs[1],
 						'-preset ultrafast'
                     ])
-                    .on('error', rej)
+                    .on('error', (err, stdout, stderr) => {
+						console.log(stderr);
+						rej();
+					})
                     .on('end', () => {
                         fs.unlinkSync(videoInputPath);
-                        log.info(`Encode done (pass ${pass})`);
-                        res(videoOutputPath);
+						fs.stat(videoOutputPath, (err, stats) => {
+							log.info(`Encode done (pass ${pass}), new size ${stats.size / 1048576}MB`);
+							res(videoOutputPath);
+						});
                     })
                     .save(videoOutputPath);
             } else {
                 //small enough
-                log.info(`Not encoding ${videoInputPath} (pass ${pass}), already small enough (${probeOut.format.size / 8 / 1000}KB)`);
+                log.info(`Not encoding ${videoInputPath} (pass ${pass}), already small enough (${probeOut.format.size / 1048576}MB)`); //mebibyte
                 fs.renameSync(videoInputPath, videoOutputPath)
                 res(videoOutputPath);
             }
