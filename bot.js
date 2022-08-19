@@ -133,7 +133,7 @@ client.on('messageCreate', (message) => {
 
                                 if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                                 dlFReasons[e.toString()]++;
-                                dlF++;
+                                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                             });
                         } else {
                             log.error(`Error sending message (1): ${e}, deleting ${resp}`);
@@ -141,7 +141,7 @@ client.on('messageCreate', (message) => {
 
                             if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                             dlFReasons[e.toString()]++;
-                            dlF++;
+                            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                         }
                     });
                 })
@@ -153,7 +153,7 @@ client.on('messageCreate', (message) => {
     
                     if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                     dlFReasons[e.toString()]++;
-                    dlF++;
+                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                 });
 
             /*
@@ -190,7 +190,7 @@ client.on('messageCreate', (message) => {
 
                 if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                 dlFReasons[e.toString()]++;
-                dlF++;
+                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
             });
     }
 });
@@ -241,7 +241,7 @@ function getTikTokData(url) {
 			ignoreHTTPSErrors: true,
 			args: [
 				'--no-sandbox',
-				'--proxy-server=socks5://127.0.0.1:8080'
+				//'--proxy-server=socks5://127.0.0.1:8080'
 			]
 		}).then((browser) => {
 			browser.newPage().then((page) => {
