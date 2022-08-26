@@ -7,7 +7,16 @@ const ffmpegPath = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const puppeteer = require('puppeteer');
 const log = require("./log.js");
-//const jssoup = require('jssoup').default;
+const sharp = require('sharp');
+const jssoup = require('jssoup').default;
+const process = require("process");
+const https = require('https');
+const { exec } = require("child_process");
+
+const VidTypes = {
+    Video: 'Video',
+    Slideshow: 'Slideshow'
+};
 
 //ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -17,19 +26,9 @@ const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(
 
 const token = process.env.token;
 
-//process setup
-
-//process.on('unhandledRejection', (reason, p) => {
-//    log.error('Unhandled Rejection: ', reason, p);
-//});
-
-if (!fs.existsSync("./videos/")) {
-    fs.mkdirSync("./videos/");
-}
-
-if (!fs.existsSync("./logs/")) {
-    fs.mkdirSync("./logs/");
-}
+if (!fs.existsSync("./videos/")) fs.mkdirSync("./videos/");
+if (!fs.existsSync("./images/")) fs.mkdirSync("./images/");
+if (!fs.existsSync("./logs/")) fs.mkdirSync("./logs/");
 
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
@@ -43,11 +42,12 @@ process.on('uncaughtException', function (err) {
         log.error("Error formatting error");
         log.error(err.stack);
     }
-
-    //restartBot();
+});
+process.on('unhandledRejection', (reason, p) => {
+    log.error('Unhandled Rejection: ', reason, p);
 });
 
-//discord bot
+
 
 let dlS = 0, dlF = 0;
 let dlFReasons = {};
@@ -85,28 +85,31 @@ client.on('messageCreate', (message) => {
             log.info("Not TikTok URL");
             return;
         }
-        log.info(`Initiating download on ${rgx.groups.url}`);
+
+        let url = rgx.groups.url;
+        log.info(`Initiating download on ${url}`);
 
         //start typing, ignore errors
         message.channel.sendTyping().catch((e) => { });
 
         new Promise((res, rej) => {
             if (rgx.groups.domain.includes("vm.tiktok.com") || rgx.groups.domain.includes("vt.tiktok.com") || rgx.groups.url.includes("/t/")) {
-                request(rgx.groups.url, {
+                request(url, {
                     headers: {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.81 Safari/537.36",
-                        "tt_csrf_token": "CnGuS2KOVoET1MfVTgyFAxwz"
+                        //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.81 Safari/537.36"
                     }
                 })
                     .then((resp) => {
                         log.info(`Redirect to ${resp.request.res.responseUrl}`)
                         if (resp.request.res.responseurl == "https://www.tiktok.com/") {
+                            log.error("Redirect returned homepage!");
                             rej("NOTFOUND");
                         } else {
                             res(resp.request.res.responseUrl.split("?")[0]);
                         }
                     })
                     .catch((error) => {
+                        log.error(error);
                         rej(`NOTFOUND`);
                     });
             } else {
@@ -115,72 +118,66 @@ client.on('messageCreate', (message) => {
         }).then((url) => {
             log.info(`Downloading ${url}`);
 
-            downloadVideo(url)
-                .then((resp) => {
-                    message.reply({ files: [resp] }).then(() => {
-                        log.info("Message sent (reply), deleting " + resp);
-                        fs.unlinkSync(resp);
-                        dlS++;
-                    }).catch((e) => {
-                        if (e.code == 50035) {
-                            message.channel.send({ files: [resp] }).then(() => {
-                                log.info("Message sent (channel), deleting " + resp);
+            getTikTokData(url)
+                .then((data) => {
+                    let promise;
+                    switch (data[0]) {
+                        case VidTypes.Video:
+                            promise = downloadVideo(url, data[1]);
+                            break;
+                        case VidTypes.Slideshow:
+                            promise = downloadSlide(url, data[1], data[2]);
+                            break;
+                        default:
+                            promise = new Promise((res, rej) => { rej("Unknown video type!"); });
+                    }
+
+                    promise
+                        .then((resp) => {
+                            message.reply({ files: [resp] }).then(() => {
+                                log.info("Message sent (reply), deleting " + resp);
                                 fs.unlinkSync(resp);
                                 dlS++;
                             }).catch((e) => {
-                                log.error(`Error sending message (2): ${e.toString()}, deleting ${resp}`);
-                                fs.unlinkSync(resp);
+                                if (e.code == 50035) {
+                                    message.channel.send({ files: [resp] }).then(() => {
+                                        log.info("Message sent (channel), deleting " + resp);
+                                        fs.unlinkSync(resp);
+                                        dlS++;
+                                    }).catch((e) => {
+                                        log.error(`Error sending message (2): ${e.toString()}, deleting ${resp}`);
+                                        fs.unlinkSync(resp);
 
-                                if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
-                                dlFReasons[e.toString()]++;
-                                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                        if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                                        dlFReasons[e.toString()]++;
+                                        if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                    });
+                                } else {
+                                    log.error(`Error sending message (1): ${e}, deleting ${resp}`);
+                                    fs.unlinkSync(resp);
+
+                                    if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                                    dlFReasons[e.toString()]++;
+                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                }
+                                return;
                             });
-                        } else {
-                            log.error(`Error sending message (1): ${e}, deleting ${resp}`);
-                            fs.unlinkSync(resp);
+                        })
+                        .catch((e) => {
+                            message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
+                                log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
+                            });
+                            log.info(`Could not download video: ${e}`);
 
                             if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                             dlFReasons[e.toString()]++;
-                            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
-                        }
-                    });
+                            if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                            return;
+                        });
                 })
                 .catch((e) => {
-                    message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
-                        log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
-                    });
-                    log.info(`Could not download video: ${e}`);
-    
-                    if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
-                    dlFReasons[e.toString()]++;
-                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                    console.log(e);
                 });
-
-            /*
-            request(url, { headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1" } })
-                .then((resp) => {
-                    let soup = new jssoup(resp.data);
-                    let tikType = soup.findAll('div', attrs = { 'class': 'swiper-slide' });
-                    if (tikType.length == 0) {
-                        NORMAL VIDEO DOWNLOAD CODE HERE
-                    } else {
-                        downloadSlide(url, soup)
-                            .then((resp) => {
-                                message.channel.send({ files: [resp] });
-                                log.info("Message sent!");
-                            })
-                            .catch((error) => {
-                                message.channel.send(`Could not download video: ${e}`);
-                                log.info(`Could not download video: ${e}`);
-                            });
-                    }
-                })
-                .catch((e) => {
-                    //could not get initial tiktok page
-                    message.channel.send(`Could not download video: ${e.response.status == 404 ? "NOTFOUND" : "UNKNOWN"}`);
-                    log.info(`Could not download video: ${e.response.status == 404 ? "NOTFOUND" : "UNKNOWN"}`);
-                });
-                */
         })
             .catch((e) => {
                 message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
@@ -190,7 +187,7 @@ client.on('messageCreate', (message) => {
 
                 if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                 dlFReasons[e.toString()]++;
-                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTFOUND@2" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
             });
     }
 });
@@ -235,87 +232,146 @@ function randomAZ(n = 5) {
 
 function getTikTokData(url) {
     return new Promise((res, rej) => {
-		puppeteer.launch({
-			headless: true,
-			devtools: false,
-			ignoreHTTPSErrors: true,
-			args: [
-				'--no-sandbox',
-				//'--proxy-server=socks5://127.0.0.1:8080'
-			]
-		}).then((browser) => {
-			browser.newPage().then((page) => {
-				page.setViewport({ width: 1600, height: 900 }).then(() => {
-					page.setRequestInterception(true).then(() => {
-						let requestAborted = false;
-						let goodURL;
-						page.on('request', request => {
-							if (requestAborted == false) {
-								if (request.resourceType() === 'media') {
-									requestAborted = true;
-									page.evaluate(() => window.stop()).then(() => {
-										goodURL = request.url();
-									});
-								} else {
-									request.continue();
-								}
-							} else {
-								request.abort();
-							}
-						});
-						page.goto(url, { waitUntil: "networkidle2" })
-							.then(() => {
-								res(goodURL);
-								browser.close();
-							})
-							.catch((error) => {
-								log.info(error);
-								rej("NOTFOUND@1");
-							});
-					});
-				});
-			});
-		});
-	});
+        puppeteer.launch({
+            headless: true,
+            devtools: false,
+            ignoreHTTPSErrors: true,
+            args: [
+                '--no-sandbox',
+                //'--proxy-server=socks5://127.0.0.1:8080'
+            ]
+        }).then((browser) => {
+            browser.newPage().then((page) => {
+                page.setCacheEnabled(false).then(() => {
+                    page.setUserAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1").then(() => {
+                        page.setViewport({ width: 1920, height: 1080 }).then(() => {
+                            page.setRequestInterception(true).then(() => {
+                                let videoURL;
+                                page.on('request', request => {
+                                    if (request.resourceType() === 'media') {
+                                        if (request.url().endsWith(".mp3")) audioURL = decodeURI(request.url()).replace("&amp;", "&");
+                                        else videoURL = decodeURI(request.url()).replace("&amp;", "&");
+                                    }
+                                    request.continue();
+                                });
+                                page.goto(url, { waitUntil: "networkidle0" })
+                                    .then(() => {
+                                        if (videoURL != undefined) {
+                                            res([VidTypes.Video, videoURL]);
+                                        } else {
+                                            page.evaluate(() => document.querySelector('*').outerHTML).then((pageHTML) => {
+                                                let soup = new jssoup(pageHTML);
+                                                let slides = soup.findAll('div', { class: "swiper-slide" });
+                                                let slideImages = {};
+                                                slides.forEach((slide) => {
+                                                    if (slide.contents[0].attrs.src != undefined) {
+                                                        slideImages[slide.attrs['data-swiper-slide-index']] = decodeURI(slide.contents[0].attrs.src).replace("&amp;", "&");
+                                                    }
+                                                });
+
+                                                res([VidTypes.Slideshow, slideImages, audioURL]);
+                                            })
+                                                .catch((error) => {
+                                                    console.log(error);
+                                                    rej("error")
+                                                });
+                                        }
+                                        browser.close();
+                                    })
+                                    .catch((error) => {
+                                        log.info(error);
+                                        rej("NOTFOUND@1");
+                                    });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 }
 
-function downloadVideo(url) {
+function downloadVideo(ogURL, vidURL) {
     return new Promise((res, rej) => {
-        getTikTokData(url)
-            .then((vidURL) => {
-				if (vidURL == undefined) {
-					rej("NOTFOUND@2");
-				} else {
-					let id = url.split("?")[0].split("/")[5];
-					let randomName = randomAZ();
-					
-					let ogName = `./videos/${id}_${randomName}_encode.mp4`;
-					let pass1Name = `./videos/${id}_${randomName}_pass1.mp4`;
-					let pass2Name = `./videos/${id}_${randomName}.mp4`;
+        if (vidURL == undefined) {
+            log.warn("vidURL is undefined!");
+            rej("NOTFOUND");
+        } else {
+            let id = ogURL.split("?")[0].split("/")[5];
+            let randomName = randomAZ();
 
-					getURLContent(vidURL).then((content) => {
-						fs.writeFileSync(ogName, content);
-						log.info(`Downloaded successfully to ${ogName}`);
+            let ogName = `./videos/${id}_${randomName}_encode.mp4`;
+            let pass1Name = `./videos/${id}_${randomName}_pass1.mp4`;
+            let pass2Name = `./videos/${id}_${randomName}.mp4`;
 
-						compressVideo(ogName, pass1Name, 8, 1)
-							.then((compressedName) => {
-                                //compressVideo(pass1Name, pass2Name, 8, 2)
-                                //    .then((compressedName) => {
-								        res(compressedName);
-                                //    })
-                                //    .catch((e) => {
-                                //        log.error(e);
-                                //    });
-							})
-							.catch((e) => {
-								log.error(e);
-							});
-					}).catch((e) => { });
-				}
-            })
-            .catch(error => {
-                rej(error);
+            getURLContent(vidURL).then((content) => {
+                fs.writeFileSync(ogName, content);
+                log.info(`Downloaded successfully to ${ogName}`);
+
+                compressVideo(ogName, pass1Name, 8, 1)
+                    .then((compressedName) => {
+                        res(compressedName);
+                    })
+                    .catch((e) => { log.error(e); rej(e); });
+            }).catch((e) => { log.error(e); rej(e); });
+        }
+    });
+}
+
+function downloadSlide(ogURL, imageURLs, audioURL) {
+    return new Promise((res, rej) => {
+        let id = ogURL.split("?")[0].split("/")[5];
+        let randomName = randomAZ();
+        let promises = [];
+
+        promises.push(new Promise((res, rej) => {
+            let file = fs.createWriteStream(`./images/${id}_${randomName}_0.mp3`);
+            https.get(audioURL, function (response) {
+                response.pipe(file);
+                file.on("finish", () => {
+                    file.close();
+                    res(`./images/${id}_${randomName}_0.mp3`);
+                });
             });
+        }));
+        Object.keys(imageURLs).forEach((imageURLkey) => {
+            promises.push(new Promise((res, rej) => {
+                let file = fs.createWriteStream(`./images/${id}_${randomName}_${imageURLkey}.jpg`);
+                https.get(imageURLs[imageURLkey], function (response) {
+                    response.pipe(file);
+                    file.on("finish", () => {
+                        file.close(() => {
+                            sharp(`./images/${id}_${randomName}_${imageURLkey}.jpg`)
+                                .toColourspace('srgb')
+                                .toFile(`./images/${id}_${randomName}_${imageURLkey}_c.jpg`)
+                                .then(() => {
+                                    fs.unlinkSync(`./images/${id}_${randomName}_${imageURLkey}.jpg`);
+                                    res(`./images/${id}_${randomName}_${imageURLkey}_c.jpg`);
+                                }).catch((e) => {console.log(e);});
+                        });
+                    });
+                });
+            }));
+        });
+
+        Promise.all(promises).then((results) => {
+            let videoName = `videos/${id}_${randomName}.mp4`;
+            let pass1Name = `videos/${id}_${randomName}_pass1.mp4`;
+
+            let ffmpegExec = exec(`ffmpeg -hide_banner -loglevel error -r 1/2.5 -start_number 0 -i ${process.cwd()}/images/${id}_${randomName}_%01d_c.jpg -i ${process.cwd()}/images/${id}_${randomName}_0.mp3 -map 0 -map 1 -shortest -c:v libx264 -vf "scale=\'if(gt(a*sar,16/9),640,360*iw*sar/ih)\':\'if(gt(a*sar,16/9),640*ih/iw/sar,360)\',pad=640:360:(ow-iw)/2:(oh-ih)/2,setsar=1" -r 30 -pix_fmt yuv420p ${process.cwd()}/${videoName}`, (error, stdout, stderr) => {
+                if (error || stderr) { console.log(`error: ${error}, ${stderr}`); return; }
+            });
+            ffmpegExec.stdout.pipe(process.stdout);
+            ffmpegExec.on('exit', function () {
+                results.forEach((f) => {
+                    fs.unlinkSync(f);
+                });
+
+                compressVideo(videoName, pass1Name, 8, 1).then((encodedName) => {
+                    res(encodedName);
+                }).catch((e) => { log.error(e); rej(e); });
+            });
+        });
     });
 }
 
@@ -343,18 +399,18 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
                     .outputOptions([
                         '-b:v ' + videoBitrate,
                         '-b:a ' + audioBitrate,
-						'-preset ultrafast'
+                        '-preset ultrafast'
                     ])
                     .on('error', (err, stdout, stderr) => {
-						console.log(stderr);
-						rej();
-					})
+                        console.log(stderr);
+                        rej();
+                    })
                     .on('end', () => {
                         fs.unlinkSync(videoInputPath);
-						fs.stat(videoOutputPath, (err, stats) => {
-							log.info(`Encode done (pass ${pass}), new size ${stats.size / 1048576}MB`);
-							res(videoOutputPath);
-						});
+                        fs.stat(videoOutputPath, (err, stats) => {
+                            log.info(`Encode done (pass ${pass}), new size ${stats.size / 1048576}MB`);
+                            res(videoOutputPath);
+                        });
                     })
                     .save(videoOutputPath);
             } else {
