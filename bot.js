@@ -20,7 +20,8 @@ const { exec } = require("child_process");
 
 const VidTypes = {
     Video: 'Video',
-    Slideshow: 'Slideshow'
+    Slideshow: 'Slideshow',
+    Invalid: 'Invalid'
 };
 
 //ffmpeg.setFfmpegPath(ffmpegPath);
@@ -123,70 +124,69 @@ client.on('messageCreate', (message) => {
         }).then((url) => {
             log.info(`Downloading ${url}`);
 
-            if (url.endsWith(".com/") || url.endsWith("/live")) {
-                log.info(`Link is not a valid TikTok video!`);
-            } else {
-                getTikTokData(url)
-                    .then((data) => {
-                        let promise;
-                        switch (data[0]) {
-                            case VidTypes.Video:
-                                promise = downloadVideo(url, data[1]);
-                                break;
-                            case VidTypes.Slideshow:
-                                promise = downloadSlide(url, data[1], data[2]);
-                                break;
-                            default:
-                                promise = new Promise((res, rej) => { rej("Unknown video type!"); });
-                        }
+            getTikTokData(url)
+                .then((data) => {
+                    let promise;
+                    switch (data[0]) {
+                        case VidTypes.Video:
+                            promise = downloadVideo(url, data[1]);
+                            break;
+                        case VidTypes.Slideshow:
+                            promise = downloadSlide(url, data[1], data[2]);
+                            break;
+                        case VidTypes.Invalid:
+                            promise = new Promise((res, rej) => { rej("Invalid video!"); });
+                            break;
+                        default:
+                            promise = new Promise((res, rej) => { rej("Unknown video type!"); });
+                    }
 
-                        promise
-                            .then((resp) => {
-                                message.reply({ files: [resp] }).then(() => {
-                                    log.info("Message sent (reply), deleting " + resp);
-                                    fs.unlinkSync(resp);
-                                    dlS++;
-                                }).catch((e) => {
-                                    if (e.code == 50035) {
-                                        message.channel.send({ files: [resp] }).then(() => {
-                                            log.info("Message sent (channel), deleting " + resp);
-                                            fs.unlinkSync(resp);
-                                            dlS++;
-                                        }).catch((e) => {
-                                            log.error(`Error sending message (2): ${e.toString()}, deleting ${resp}`);
-                                            fs.unlinkSync(resp);
-
-                                            if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
-                                            dlFReasons[e.toString()]++;
-                                            if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
-                                        });
-                                    } else {
-                                        log.error(`Error sending message (1): ${e}, deleting ${resp}`);
+                    promise
+                        .then((resp) => {
+                            message.reply({ files: [resp] }).then(() => {
+                                log.info("Message sent (reply), deleting " + resp);
+                                fs.unlinkSync(resp);
+                                dlS++;
+                            }).catch((e) => {
+                                if (e.code == 50035) {
+                                    message.channel.send({ files: [resp] }).then(() => {
+                                        log.info("Message sent (channel), deleting " + resp);
+                                        fs.unlinkSync(resp);
+                                        dlS++;
+                                    }).catch((e) => {
+                                        log.error(`Error sending message (2): ${e.toString()}, deleting ${resp}`);
                                         fs.unlinkSync(resp);
 
                                         if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                                         dlFReasons[e.toString()]++;
                                         if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
-                                    }
-                                    return;
-                                });
-                            })
-                            .catch((e) => {
-                                message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
-                                    log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
-                                });
-                                log.info(`Could not download video: ${e}`);
+                                    });
+                                } else {
+                                    log.error(`Error sending message (1): ${e}, deleting ${resp}`);
+                                    fs.unlinkSync(resp);
 
-                                if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
-                                dlFReasons[e.toString()]++;
-                                if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                    if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                                    dlFReasons[e.toString()]++;
+                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                }
                                 return;
                             });
-                    })
-                    .catch((e) => {
-                        console.log(e);
-                    });
-            }
+                        })
+                        .catch((e) => {
+                            message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
+                                log.debug(`Count not send video download failure message to channel: ${e.toString()}`);
+                            });
+                            log.info(`Could not download video: ${e}`);
+
+                            if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
+                            dlFReasons[e.toString()]++;
+                            if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                            return;
+                        });
+                })
+                .catch((e) => {
+                    console.log(e);
+                });
         })
             .catch((e) => {
                 message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
@@ -212,6 +212,11 @@ function randomAZ(n = 5) {
 
 function getTikTokData(url) {
     return new Promise((res, rej) => {
+        if (url.endsWith(".com/") || url.endsWith("/live")) {
+            log.info(`Link is not a valid TikTok video!`);
+            rres([VidTypes.Invalid]);
+        }
+
         puppeteer.launch({
             headless: true,
             devtools: false,
