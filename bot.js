@@ -1,5 +1,9 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({ intents: [
+	GatewayIntentBits.Guilds, 
+	GatewayIntentBits.GuildMessages, 
+	GatewayIntentBits.MessageContent
+] });
 
 const axios = require('axios');
 const fs = require("fs");
@@ -7,6 +11,7 @@ const ffmpegPath = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const puppeteer = require('puppeteer');
 const log = require("./log.js");
+const heartbeat = require("./heartbeat.js");
 const sharp = require('sharp');
 const jssoup = require('jssoup').default;
 const process = require("process");
@@ -43,10 +48,12 @@ process.on('uncaughtException', function (err) {
         log.error(err.stack);
     }
 });
+
+/*
 process.on('unhandledRejection', (reason, p) => {
     log.error('Unhandled Rejection: ', reason, p);
 });
-
+*/
 
 
 let dlS = 0, dlF = 0;
@@ -54,8 +61,11 @@ let dlFReasons = {};
 
 client.on('ready', () => {
     log.info(`Logged in as ${client.user.tag}!`);
-    setInterval(updateManager, 15 * 1000);
-    updateManager();
+    setInterval(() => {
+	log.debug(`Heartbeat: ${dlS} successes`);
+    	heartbeat.update(client, dlS, dlF, dlFReasons);
+    }, 15 * 1000);
+    heartbeat.update(client, dlS, dlF, dlFReasons);
 });
 
 client.on('interactionCreate', async interaction => {
@@ -193,35 +203,6 @@ client.on('messageCreate', (message) => {
 });
 
 //functions
-
-function updateManager() {
-    let guilds = client.guilds.cache;
-
-    let servers = guilds.size;
-    let users = 0;
-    guilds.forEach((g) => {
-        users += g.memberCount;
-    });
-
-    axios.post('https://manager.snadol.com/discordUF?type=tiktok&uid=946107355316252763', { reasons: dlFReasons }, { headers: { 'content-type': 'application/json' } })
-        .then((res) => {
-            log.debug(`Sent download failure stats to manager: ${JSON.stringify(dlFReasons)}`);
-        })
-        .catch((error) => {
-            log.warn(`Failed to send stats to mananger: ${error}`);
-        });
-
-    request(`https://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`)
-        .then((resp) => {
-            log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
-            client.user.setPresence({ activities: [{ name: `${resp.data.servers} servers`, type: 3 }], status: 'online' });
-
-        })
-        .catch((error) => {
-            log.warn(`Failed to send stats to mananger: ${error}`);
-        });
-}
-
 function randomAZ(n = 5) {
     return Array(n)
         .fill(null)
@@ -442,3 +423,4 @@ function restartBot() {
 }
 
 client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.GAf1al.8ITfM1hCSz4karAc2ZBc0tsXoXaQUH9vWAoaYI');
+//client.login('OTg4OTA1MDY2MDQxODUxOTk0.GGbmZG.fxkwoaNIM97oOfZhtdvBdDCQu16JaK90-xuiEM');
