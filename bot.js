@@ -214,7 +214,7 @@ function getTikTokData(url) {
     return new Promise((res, rej) => {
         if (url.endsWith(".com/") || url.endsWith("/live")) {
             log.info(`Link is not a valid TikTok video!`);
-            rres([VidTypes.Invalid]);
+            res([VidTypes.Invalid]);
         }
 
         puppeteer.launch({
