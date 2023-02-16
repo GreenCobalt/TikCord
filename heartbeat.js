@@ -1,8 +1,6 @@
 const axios = require('axios');
 const log = require("./log.js");
 
-const request = async (url, config = {}) => await (await axios.get(url, config));
-
 function updateManager(client, dlS, dlF, dlFReasons) {
     let guilds = client.guilds.cache;
 
@@ -12,22 +10,23 @@ function updateManager(client, dlS, dlF, dlFReasons) {
         users += g.memberCount;
     });
 
-    axios.post('https://manager.snadol.com/discordUF?type=tiktok&uid=946107355316252763', { reasons: dlFReasons }, { headers: { 'content-type': 'application/json' } })
+    axios.post('http://localhost:8601/api', {
+		type: "botsIn",
+		auth: "abc123",
+		bot: "tiktok",
+		uid: client.user.id,
+		dlS: dlS,
+		dlF: dlF,
+		dlFR: dlFReasons,
+		members: users,
+		servers: servers
+	}, { headers: { 'content-type': 'application/json' } })
         .then((res) => {
-            log.debug(`Sent download failure stats to manager: ${JSON.stringify(dlFReasons)}`);
+        	log.debug(`Sent stats to manager`);
+		client.user.setPresence({ activities: [{ name: `${res.data.servers} servers`, type: 3 }], status: 'online' });
         })
         .catch((error) => {
-            log.warn(`Failed to send stats to mananger: ${error}`);
-        });
-
-    request(`https://manager.snadol.com/discordU?type=tiktok&id=main&members=${users}&servers=${servers}&uid=${client.user.id}&dls=${dlS}&dlf=${dlF}`)
-        .then((resp) => {
-            log.debug(`Sent stats to manager: ${users} users, ${servers} servers, ${dlS} download successes, ${dlF} download failures, bot id: ${client.user.id}`);
-            client.user.setPresence({ activities: [{ name: `${resp.data.servers} servers`, type: 3 }], status: 'online' });
-
-        })
-        .catch((error) => {
-            log.warn(`Failed to send stats to mananger: ${error}`);
+         	log.warn(`Failed to send stats to mananger: ${error}`);
         });
 }
 
@@ -73,6 +72,7 @@ function updateWebsites(client) {
 function update(client, dlS, dlF, dlFReasons) {
 	updateManager(client, dlS, dlF, dlFReasons);
 	updateWebsites(client);
+	axios.get('http://localhost:3001/api/push/kYTjjXq9xw?status=up&msg=' + dlS + '&ping=' + Math.round(client.ws.ping)).then((res) => {});
 }
 
 module.exports = { update };

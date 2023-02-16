@@ -49,12 +49,9 @@ process.on('uncaughtException', function (err) {
         log.error(err.stack);
     }
 });
-
-/*
 process.on('unhandledRejection', (reason, p) => {
     log.error('Unhandled Rejection: ', reason, p);
 });
-*/
 
 
 let dlS = 0, dlF = 0;
@@ -65,7 +62,7 @@ client.on('ready', () => {
     setInterval(() => {
 	log.debug(`Heartbeat: ${dlS} successes`);
     	heartbeat.update(client, dlS, dlF, dlFReasons);
-    }, 15 * 1000);
+    }, 30 * 1000);
     heartbeat.update(client, dlS, dlF, dlFReasons);
 });
 
@@ -135,10 +132,10 @@ client.on('messageCreate', (message) => {
                             promise = downloadSlide(url, data[1], data[2]);
                             break;
                         case VidTypes.Invalid:
-                            promise = new Promise((res, rej) => { rej("Invalid video!"); });
+                            promise = new Promise((res, rej) => { rej("NOTVIDEO"); });
                             break;
                         default:
-                            promise = new Promise((res, rej) => { rej("Unknown video type!"); });
+                            promise = new Promise((res, rej) => { rej("BADTYPE"); });
                     }
 
                     promise
@@ -159,7 +156,7 @@ client.on('messageCreate', (message) => {
 
                                         if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                                         dlFReasons[e.toString()]++;
-                                        if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                        if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                                     });
                                 } else {
                                     log.error(`Error sending message (1): ${e}, deleting ${resp}`);
@@ -167,7 +164,7 @@ client.on('messageCreate', (message) => {
 
                                     if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                                     dlFReasons[e.toString()]++;
-                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                                 }
                                 return;
                             });
@@ -180,7 +177,7 @@ client.on('messageCreate', (message) => {
 
                             if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                             dlFReasons[e.toString()]++;
-                            if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                             return;
                         });
                 })
@@ -196,7 +193,7 @@ client.on('messageCreate', (message) => {
 
                 if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                 dlFReasons[e.toString()]++;
-                if (!(e.toString() == "NOTFOUND" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
             });
     }
 });
@@ -289,6 +286,7 @@ function downloadVideo(ogURL, vidURL) {
             let pass1Name = `./videos/${id}_${randomName}_pass1.mp4`;
             let pass2Name = `./videos/${id}_${randomName}.mp4`;
 
+			console.log(vidURL);
             getURLContent(vidURL).then((content) => {
                 fs.writeFileSync(ogName, content);
                 log.info(`Downloaded successfully to ${ogName}`);
