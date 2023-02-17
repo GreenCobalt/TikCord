@@ -219,7 +219,7 @@ function getTikTokData(url) {
             devtools: false,
             ignoreHTTPSErrors: true,
             args: [
-                '--no-sandbox', "--fast-start", "--disable-extensions",
+                '--no-sandbox', "--fast-start", "--disable-extensions", "--disable-gpu",
                 //'--proxy-server=socks5://127.0.0.1:8080'
             ]
         }).then((browser) => {
