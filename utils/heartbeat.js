@@ -10,7 +10,7 @@ function updateManager(client, dlS, dlF, dlFReasons) {
         users += g.memberCount;
     });
 
-    axios.post('http://manager.snadol.com/api', {
+    axios.post('https://manager.snadol.com/api', {
 		type: "botsIn",
 		auth: "abc123",
 		bot: "tiktok",
@@ -72,10 +72,12 @@ function updateWebsites(client) {
 function update(client, dlS, dlF, dlFReasons) {
 	updateManager(client, dlS, dlF, dlFReasons);
 	updateWebsites(client);
+	/*
 	axios.get('http://localhost:3001/api/push/kYTjjXq9xw?status=up&msg=' + dlS + '&ping=' + Math.round(client.ws.ping)).then((res) => {})
 		.catch((error) => {
 			log.debug(`Failed to send stats to UptimeKuma: ${error}`);
-		});;
+		});
+	*/
 }
 
 module.exports = { update };
