@@ -48,9 +48,11 @@ process.on('uncaughtException', function (err) {
     }
 });
 
+/*
 process.on('unhandledRejection', (reason, p) => {
     log.error('Unhandled Rejection: ', reason, p);
 });
+*/
 
 let dlS = 0, dlF = 0;
 let dlFReasons = {};
