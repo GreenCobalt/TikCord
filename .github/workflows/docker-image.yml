@@ -7,14 +7,6 @@ on:
 jobs:
   build:
     runs-on: self-hosted
-    steps:      
-      - 
-        name: Login to private registry
-        uses: docker/login-action@v1
-        with:
-          registry: ${{ secrets.REGISTRY_URL }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-      - 
-        name: Build the Docker image
+    steps:
+      - name: Build the Docker image
         run: docker build . --file Dockerfile --tag TikCord:$(date +%s)
