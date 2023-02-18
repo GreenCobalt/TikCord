@@ -10,7 +10,7 @@ function updateManager(client, dlS, dlF, dlFReasons) {
         users += g.memberCount;
     });
 
-    axios.post('http://localhost:8601/api', {
+    axios.post('http://manager.snadol.com/api', {
 		type: "botsIn",
 		auth: "abc123",
 		bot: "tiktok",
