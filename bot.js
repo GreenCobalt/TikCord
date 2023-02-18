@@ -18,19 +18,17 @@ const process = require("process");
 const https = require('https');
 const { exec } = require("child_process");
 
+require('dotenv').config();
+
 const VidTypes = {
     Video: 'Video',
     Slideshow: 'Slideshow',
     Invalid: 'Invalid'
 };
 
-//ffmpeg.setFfmpegPath(ffmpegPath);
-
 let linkRegex = /(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\/|tiktok\.com\/@(.*[\/]))(?<path>[^\s]+))/;
 const request = async (url, config = {}) => await (await axios.get(url, config));
 const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data).catch((e) => { log.info(e) });
-
-const token = process.env.token;
 
 if (!fs.existsSync("./videos/")) fs.mkdirSync("./videos/");
 if (!fs.existsSync("./images/")) fs.mkdirSync("./images/");
@@ -49,10 +47,10 @@ process.on('uncaughtException', function (err) {
         log.error(err.stack);
     }
 });
+
 process.on('unhandledRejection', (reason, p) => {
     log.error('Unhandled Rejection: ', reason, p);
 });
-
 
 let dlS = 0, dlF = 0;
 let dlFReasons = {};
@@ -73,14 +71,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply('Pong!');
     } else if (interaction.commandName === 'help') {
         await interaction.reply('Just send a TikTok link and the bot will automatically download and send it in the chat!');
-    } else if (interaction.commandName === 'restart') {
-        if (interaction.user.id === 441040161589952562) {
-            await interaction.reply('Restarting bot!');
-            restartBot();
-        } else {
-            await interaction.reply('You do not have permission to do that!');
-        }
-    }
+    } else {}
 });
 
 client.on('messageCreate', (message) => {
@@ -198,7 +189,6 @@ client.on('messageCreate', (message) => {
     }
 });
 
-//functions
 function randomAZ(n = 5) {
     return Array(n)
         .fill(null)
@@ -406,23 +396,4 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
     });
 }
 
-function restartBot() {
-    setTimeout(function () {
-        process.on("exit", function () {
-            require("child_process")
-                .spawn(
-                    process.argv.shift(),
-                    process.argv,
-                    {
-                        cwd: process.cwd(),
-                        detached: true,
-                        stdio: "inherit"
-                    }
-                );
-        });
-        process.exit();
-    }, 1000);
-}
-
-client.login('OTQ2MTA3MzU1MzE2MjUyNzYz.GAf1al.8ITfM1hCSz4karAc2ZBc0tsXoXaQUH9vWAoaYI');
-//client.login('OTg4OTA1MDY2MDQxODUxOTk0.GGbmZG.fxkwoaNIM97oOfZhtdvBdDCQu16JaK90-xuiEM');
+client.login(process.env.TOKEN);
