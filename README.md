@@ -1,1 +1,1 @@
-you must download the appropriate chromedriver.exe for your system as well as ffmpeg.exe FULL (not essentials). place them in the bin/ folder.
+TikCord
