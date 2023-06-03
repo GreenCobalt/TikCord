@@ -59,11 +59,16 @@ let dlFReasons = {};
 
 client.on('ready', () => {
     log.info(`Logged in as ${client.user.tag}!`);
-    setInterval(() => {
-	log.debug(`Heartbeat: ${dlS} successes`);
-    	heartbeat.update(client, dlS, dlF, dlFReasons);
-    }, 30 * 1000);
-    heartbeat.update(client, dlS, dlF, dlFReasons);
+
+    if (!(process.env.DISABLE_HEARTBEAT && process.env.DISABLE_HEARTBEAT == "true")) {
+        setInterval(() => {
+           log.debug(`Heartbeat: ${dlS} successes`);
+        	heartbeat.update(client, dlS, dlF, dlFReasons);
+        }, 30 * 1000);
+        heartbeat.update(client, dlS, dlF, dlFReasons);
+    } else {
+        log.info("Heartbeat logging disabled by process environment.");
+    }
 });
 
 client.on('interactionCreate', async interaction => {
@@ -78,12 +83,9 @@ client.on('interactionCreate', async interaction => {
 
 client.on('messageCreate', (message) => {
     if (message.content.includes("https://") && message.content.includes("tiktok.com")) {
-        log.info(`Could be TikTok URL`);
-
         linkRegex.lastIndex = 0;
         let rgx = linkRegex.exec(message.content);
         if (rgx == null) {
-            log.info("Not TikTok URL");
             return;
         }
 
@@ -101,7 +103,7 @@ client.on('messageCreate', (message) => {
                     }
                 })
                     .then((resp) => {
-                        log.info(`Redirect to ${resp.request.res.responseUrl}`)
+                        //log.info(`Redirect to ${resp.request.res.responseUrl}`)
                         res(resp.request.res.responseUrl.split("?")[0]);
                     })
                     .catch((error) => {
@@ -149,7 +151,7 @@ client.on('messageCreate', (message) => {
 
                                         if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                                         dlFReasons[e.toString()]++;
-                                        if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                        if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!"  || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                                     });
                                 } else {
                                     log.error(`Error sending message (1): ${e}, deleting ${resp}`);
@@ -157,7 +159,7 @@ client.on('messageCreate', (message) => {
 
                                     if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                                     dlFReasons[e.toString()]++;
-                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!"  || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                                 }
                                 return;
                             });
@@ -170,7 +172,7 @@ client.on('messageCreate', (message) => {
 
                             if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                             dlFReasons[e.toString()]++;
-                            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!"  || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
                             return;
                         });
                 })
@@ -186,7 +188,7 @@ client.on('messageCreate', (message) => {
 
                 if (!Object.keys(dlFReasons).includes(e.toString())) dlFReasons[e.toString()] = 0;
                 dlFReasons[e.toString()]++;
-                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
+                if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) dlF++;
             });
     }
 });
@@ -220,11 +222,13 @@ function getTikTokData(url) {
                     page.setUserAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1").then(() => {
                         page.setViewport({ width: 1920, height: 1080 }).then(() => {
                             page.setRequestInterception(true).then(() => {
-                                let videoURL;
+                                let videoURL, audioURL, audioClick;
                                 page.on('request', request => {
                                     if (request.resourceType() === 'media') {
-                                        if (request.url().endsWith(".mp3")) audioURL = decodeURI(request.url()).replace("&amp;", "&");
-                                        else videoURL = decodeURI(request.url()).replace("&amp;", "&");
+                                        if (!request.url().includes("audio_mpeg")) {
+                                            if (request.url().endsWith(".mp3")) audioURL = decodeURI(request.url()).replace("&amp;", "&");
+                                            else videoURL = decodeURI(request.url()).replace("&amp;", "&");
+                                        }
                                     }
                                     request.continue();
                                 });
@@ -232,23 +236,27 @@ function getTikTokData(url) {
                                     .then(() => {
                                         if (videoURL != undefined) {
                                             res([VidTypes.Video, videoURL]);
-                                        } else {
-                                            page.evaluate(() => document.querySelector('*').outerHTML).then((pageHTML) => {
-                                                let soup = new jssoup(pageHTML);
-                                                let slides = soup.findAll('div', { class: "swiper-slide" });
-                                                let slideImages = {};
-                                                slides.forEach((slide) => {
-                                                    if (slide.contents[0].attrs.src != undefined) {
-                                                        slideImages[slide.attrs['data-swiper-slide-index']] = decodeURI(slide.contents[0].attrs.src).replace("&amp;", "&");
-                                                    }
-                                                });
+                                        } else if (audioURL != undefined) {
+                                            page.evaluate(() => document.querySelector('*').outerHTML)
+                                                .then((pageHTML) => {
+                                                    let soup = new jssoup(pageHTML);
+                                                    let slides = soup.findAll('div', { class: "swiper-slide" });
+                                                    let slideImages = {};
+                                                    slides.forEach((slide) => {
+                                                        if (slide.contents[0].attrs.src != undefined) {
+                                                            slideImages[slide.attrs['data-swiper-slide-index']] = decodeURI(slide.contents[0].attrs.src).replace("&amp;", "&");
+                                                        }
+                                                    });
 
-                                                res([VidTypes.Slideshow, slideImages, audioURL]);
-                                            })
+                                                    res([VidTypes.Slideshow, slideImages, audioURL]);
+                                                })
                                                 .catch((error) => {
                                                     console.log(error);
                                                     rej("error")
                                                 });
+                                        } else {
+                                            //console.log("AUDIO ONLY");
+                                            res([VidTypes.Invalid]);
                                         }
                                         browser.close();
                                     })
