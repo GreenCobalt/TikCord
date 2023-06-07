@@ -10,6 +10,7 @@ function updateManager(client, dlS, dlF, dlFReasons) {
         users += g.memberCount;
     });
 
+    log.info("Sending stats to manager");
     axios.post('https://manager.snadol.com/api', {
 		type: "botsIn",
 		auth: "abc123",

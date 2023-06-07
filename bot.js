@@ -70,7 +70,6 @@ client.on('ready', () => {
         log.info("Heartbeat logging disabled by process environment.");
     }
 });
-
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -103,7 +102,7 @@ client.on('messageCreate', (message) => {
                     }
                 })
                     .then((resp) => {
-                        //log.info(`Redirect to ${resp.request.res.responseUrl}`)
+                        log.info(`Redirect to ${resp.request.res.responseUrl}`)
                         res(resp.request.res.responseUrl.split("?")[0]);
                     })
                     .catch((error) => {
@@ -209,7 +208,7 @@ function getTikTokData(url) {
         }
 
         puppeteer.launch({
-            headless: true,
+            headless: "new",
             devtools: false,
             ignoreHTTPSErrors: true,
             args: [
@@ -364,7 +363,8 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
 
     return new Promise((res, rej) => {
         ffmpeg.ffprobe(videoInputPath, (err, probeOut) => {
-            if (probeOut.format.size > 8 * 1048576) {
+            console.log(probeOut);
+	    if (probeOut.format.size > 8 * 1048576) {
                 //too big
                 log.info(`Encoding ${videoInputPath} to under 8MB (pass ${pass}), current size ${probeOut.format.size / 1048576}MB`);
 
@@ -406,4 +406,5 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
     });
 }
 
+console.log("Logging in");
 client.login(process.env.TOKEN);
