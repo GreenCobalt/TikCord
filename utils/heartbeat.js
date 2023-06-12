@@ -1,6 +1,8 @@
 const axios = require('axios');
 const log = require("./log.js");
 
+let upSince = Date.now();
+
 function updateManager(client, dlS, dlF, dlFReasons) {
     let guilds = client.guilds.cache;
 
@@ -20,7 +22,8 @@ function updateManager(client, dlS, dlF, dlFReasons) {
 		dlF: dlF,
 		dlFR: dlFReasons,
 		members: users,
-		servers: servers
+		servers: servers,
+		upsince: upSince
 	}, { headers: { 'content-type': 'application/json' } })
         .then((res) => {
         	log.debug(`Sent stats to manager`);
