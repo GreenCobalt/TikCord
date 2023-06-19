@@ -34,6 +34,11 @@ if (!fs.existsSync("./videos/")) fs.mkdirSync("./videos/");
 if (!fs.existsSync("./images/")) fs.mkdirSync("./images/");
 if (!fs.existsSync("./logs/")) fs.mkdirSync("./logs/");
 
+process.on('SIGTERM', function() {
+    client.destroy().then(() => {
+        process.exit();
+    });
+});
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
 
