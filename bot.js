@@ -30,15 +30,19 @@ let linkRegex = /(?<url>https?:\/\/(www\.)?(?<domain>vm\.tiktok\.com|vt\.tiktok\
 const request = async (url, config = {}) => await (await axios.get(url, config));
 const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data).catch((e) => { log.info(e) });
 
+let heartbeatInterval;
+
 if (!fs.existsSync("./videos/")) fs.mkdirSync("./videos/");
 if (!fs.existsSync("./images/")) fs.mkdirSync("./images/");
 if (!fs.existsSync("./logs/")) fs.mkdirSync("./logs/");
 
 process.on('SIGTERM', function() {
-    client.destroy().then(() => {
-        process.exit();
-    });
+    log.info("Caught SIGTERM");
+    clearInterval(heartbeatInterval);
+    client.destroy();
+    process.exit();
 });
+
 process.on('uncaughtException', function (err) {
     log.error((new Date).toUTCString() + ' uncaughtException:', err.message);
 
@@ -66,7 +70,7 @@ client.on('ready', () => {
     log.info(`Logged in as ${client.user.tag}!`);
 
     if (!(process.env.DISABLE_HEARTBEAT && process.env.DISABLE_HEARTBEAT == "true")) {
-        setInterval(() => {
+        heartbeatInterval = setInterval(() => {
            log.debug(`Heartbeat: ${dlS} successes`);
         	heartbeat.update(client, dlS, dlF, dlFReasons);
         }, 30 * 1000);
@@ -410,5 +414,5 @@ function compressVideo(videoInputPath, videoOutputPath, targetSize, pass) {
     });
 }
 
-console.log("Logging in");
+log.info("Logging in");
 client.login(process.env.TOKEN);

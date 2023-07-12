@@ -27,6 +27,7 @@ function updateManager(client, dlS, dlF, dlFReasons) {
 	}, { headers: { 'content-type': 'application/json' } })
         .then((res) => {
         	log.debug(`Sent stats to manager`);
+console.log(res.data);
 		client.user.setPresence({ activities: [{ name: `${res.data.data.servers} servers`, type: 3 }], status: 'online' });
         })
         .catch((error) => {
