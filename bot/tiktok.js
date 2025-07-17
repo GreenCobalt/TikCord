@@ -1,6 +1,4 @@
 const sharp = require('sharp');
-const puppeteer = require('puppeteer');
-const jssoup = require('jssoup').default;
 const https = require('https');
 const fs = require("fs");
 const { exec } = require("child_process");
@@ -24,6 +22,8 @@ let ramDisk;
 function init(disk) {
     ramDisk = disk;
 }
+
+sharp.cache(false);
 
 function getTikTokData(threadID, url) {
     return new Promise((res, rej) => {
@@ -96,19 +96,29 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
         let promises = [];
 
         promises.push(new Promise((res, rej) => {
-            let file = fs.createWriteStream(`${ramDisk.name}/images/${id}_${threadID}_0.mp3`);
-            https.get(audioURL, function (response) {
+            let filePath = `${ramDisk.name}/images/${id}_${threadID}_0.mp3`;
+            let file = fs.createWriteStream(filePath);
+
+            let request = https.get(audioURL, function (response) {
                 response.pipe(file);
                 file.on("finish", () => {
                     file.close();
                     res(`${ramDisk.name}/images/${id}_${threadID}_0.mp3`);
                 });
             });
+
+            request.on("error", (err) => {
+                file.close(() => {
+                    fs.unlinkSync(filePath);
+                });
+            });
         }));
         Object.keys(imageURLs).forEach((imageURLkey) => {
             promises.push(new Promise((res, rej) => {
-                let file = fs.createWriteStream(`${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}.jpg`);
-                https.get(imageURLs[imageURLkey], function (response) {
+                let filePath = `${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}.jpg`;
+                let file = fs.createWriteStream(filePath);
+
+                let request = https.get(imageURLs[imageURLkey], function (response) {
                     response.pipe(file);
                     file.on("finish", () => {
                         file.close(() => {
@@ -121,6 +131,12 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
                                     res(`${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}_c.jpg`);
                                 });
                         });
+                    });
+                });
+
+                request.on("error", (err) => {
+                    file.close(() => {
+                        fs.unlinkSync(filePath);
                     });
                 });
             }));
