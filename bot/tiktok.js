@@ -156,7 +156,7 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
                     fs.unlinkSync(f);
                 });
 
-                ffmpegutils.compressVideo(dir, videoName, pass1Name, 8, 1).then((encodedName) => {
+                ffmpegutils.compressVideo(threadID, dir, videoName, pass1Name, 8, 1).then((encodedName) => {
                     res(encodedName);
                 }).catch((e) => { log.error(e); rej(e); });
             });

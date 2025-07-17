@@ -12,7 +12,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
             if (err) { console.log(err); rej(err); }
             if (probeOut.format.size > 8 * 1048576) {
                 //too big
-                log.debug(`[${threadID}] Shrinking ${dir + videoInputPath} (${probeOut.format.size / 1048576}MB) - pass ${pass}`);
+                log.debug(`[${threadID}] Shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`);
 
                 let duration = probeOut.format.duration;
                 let audioBitrate = probeOut.streams[1].bit_rate;
@@ -37,14 +37,14 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                     .on('end', () => {
                         fs.unlinkSync(dir + videoInputPath);
                         fs.stat(dir + videoOutputPath, (err, stats) => {
-                            log.debug(`[${threadID}] Encode done (pass ${pass}), new size ${stats.size / 1048576}MB`);
+                            log.debug(`[${threadID}] Encode done (${stats.size / 1048576}MB) - pass ${pass})`);
                             res(dir + videoOutputPath);
                         });
                     })
                     .save(dir + videoOutputPath);
             } else {
                 //small enough
-                log.debug(`[${threadID}] Not shrinking ${dir + videoInputPath} (${probeOut.format.size / 1048576}MB) - pass ${pass}`); //mebibyte
+                log.debug(`[${threadID}] Not shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`); //mebibyte
                 fs.renameSync(dir + videoInputPath, dir + videoOutputPath);
                 res(dir + videoOutputPath);
             }
