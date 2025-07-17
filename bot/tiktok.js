@@ -35,20 +35,20 @@ function getTikTokData(threadID, url) {
         }
 
         log.debug(`[${threadID}] Regex returned ID ${urlRe.groups.id}`);
-        log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
+        // log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
         axios({
             method: 'get',
             url: `http://${api}/api/hybrid/video_data?url=${url}`
         })
         .then(function (response) {
             let result = response.data;
-            log.debug(`[${threadID}] Data length ${JSON.stringify(result).length}`);
+            log.debug(`[${threadID}] API Data Length ${JSON.stringify(result).length}`);
 
             if (Object.keys(result.data).includes("image_post_info")) {
-		let images = [];
-		result.data.image_post_info.images.forEach((img) => {
-			images.push(img.display_image.url_list[0]);
-		});
+                let images = [];
+                result.data.image_post_info.images.forEach((img) => {
+                    images.push(img.display_image.url_list[0]);
+                });
                 res([VidTypes.Slideshow, images, result.data.music.play_url.url_list[0]]);
             } else if (result.data.video.height > 0) {
                 res([VidTypes.Video, result.data.video.play_addr.url_list[0]]);
@@ -80,7 +80,7 @@ function downloadVideo(threadID, ogURL, vidURL) {
                 fs.writeFileSync(dir + ogName, content);
                 log.info(`[${threadID}] Downloaded successfully to ${dir + ogName}`);
 
-                ffmpegutils.compressVideo(dir, ogName, pass1Name, 8, 1)
+                ffmpegutils.compressVideo(threadID, dir, ogName, pass1Name, 8, 1)
                     .then((compressedName) => {
                         res(compressedName);
                     })
