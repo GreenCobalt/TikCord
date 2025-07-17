@@ -37,7 +37,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                     .on('end', () => {
                         fs.unlinkSync(dir + videoInputPath);
                         fs.stat(dir + videoOutputPath, (err, stats) => {
-                            log.debug(`[${threadID}] Encode done (${stats.size / 1048576}MB) - pass ${pass})`);
+                            log.debug(`[${threadID}] Encode done (${stats.size / 1048576}MB) - pass ${pass}`);
                             res(dir + videoOutputPath);
                         });
                     })
