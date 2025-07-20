@@ -31,7 +31,7 @@ function getTikTokData(threadID, url) {
 
         const urlRe = /https:\/\/(www\.)?tiktok\.com\/@?(?<user>.*?)\/(video|photo)\/(?<id>\d*)/.exec(url);
         if (!urlRe) {
-            res([VidTypes.Invalid, "link is not a valid TikTok video!", true]);
+            res([VidTypes.Invalid, "link is not a valid TikTok video!", false]);
         }
 
         log.debug(`[${threadID}] Regex returned ID ${urlRe.groups.id}`);
@@ -53,7 +53,7 @@ function getTikTokData(threadID, url) {
             } else if (result.data.video.height > 0) {
                 res([VidTypes.Video, result.data.video.play_addr.url_list[0]]);
             } else {
-                res([VidTypes.Invalid, "unknown video type!", true]);
+                res([VidTypes.Invalid, "unknown video type!", false]);
             }
         })
         .catch(function (error) {
