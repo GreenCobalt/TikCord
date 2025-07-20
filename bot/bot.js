@@ -29,15 +29,12 @@ const client = new Client({
 const shardId = client.shard.ids[0];
 log.init(shardId);
 
-/*
 const userErrors = [
     "NOTFOUND",
     "unknown video type!",
     "link is not a valid TikTok video!",
     "DiscordAPIError[50013]: Missing Permissions"
 ];
-*/
-const userErrors = [];
 
 const ramDisk = {
     name: "/dev/shm/tikcord"
@@ -323,11 +320,12 @@ client.on('messageCreate', (message) => {
 
                             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.err.toString()] = 0;
                             client.tiktokstats.dlFReasons[e.err.toString()]++;
+
                             if (!userErrors.includes(e.err.toString())) client.tiktokstats.dlF++;
                         });
                 })
                 .catch((e) => { // api request failed
-                    let errString = `${e.err.response.status} ${e.err.response.statusText}`;
+                    let errString = `API ${e.err.response.status} ${e.err.response.statusText}`;
                     
                     if (e.send)
                     {
@@ -340,6 +338,7 @@ client.on('messageCreate', (message) => {
 
                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(errString)) client.tiktokstats.dlFReasons[errString] = 0;
                     client.tiktokstats.dlFReasons[errString]++;
+
                     if (!userErrors.includes(errString)) client.tiktokstats.dlF++;
                 });
         })
@@ -348,6 +347,7 @@ client.on('messageCreate', (message) => {
 
             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
             client.tiktokstats.dlFReasons[e.toString()]++;
+
             if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
         });
     }
