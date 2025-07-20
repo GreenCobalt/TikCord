@@ -327,8 +327,14 @@ client.on('messageCreate', (message) => {
                         });
                 })
                 .catch((e) => { // api request failed
-                    console.log(e);
-                    log.info(`[${threadID}] Could not download video (API): ${e.toString()}`); // axios error returned
+                    if (e.send)
+                    {
+                        message.reply(`Could not download video: ${e.err.toString()}`).then(() => { }).catch((e2) => {
+                            log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2.toString()}`);
+                        });
+                    }
+                            
+                    log.info(`[${threadID}] Could not download video (API): ${e.err.response.status} ${e.err.response.statusText}`); // axios error returned
 
                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                     client.tiktokstats.dlFReasons[e.toString()]++;
