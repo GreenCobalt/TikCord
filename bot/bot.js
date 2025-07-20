@@ -327,7 +327,7 @@ client.on('messageCreate', (message) => {
                         });
                 })
                 .catch((e) => { // api request failed
-                    log.info(`[${threadID}] Could not download video (API): ${e}`);
+                    log.info(`[${threadID}] Could not download video (API): ${e.toString()}`);
 
                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                     client.tiktokstats.dlFReasons[e.toString()]++;
@@ -335,7 +335,7 @@ client.on('messageCreate', (message) => {
                 });
         })
         .catch((e) => { // initial web request failed            
-            log.info(`[${threadID}] Could not download video (IR): ${e}`);
+            log.info(`[${threadID}] Could not download video (IR): ${e.toString()}`);
 
             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
             client.tiktokstats.dlFReasons[e.toString()]++;
