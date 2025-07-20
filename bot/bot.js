@@ -327,7 +327,7 @@ client.on('messageCreate', (message) => {
                         });
                 })
                 .catch((e) => { // api request failed
-                    log.info(`[${threadID}] Could not download video (API): ${e.toString()}`);
+                    log.info(`[${threadID}] Could not download video (API): ${e.message}`); // axios error returned
 
                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                     client.tiktokstats.dlFReasons[e.toString()]++;
