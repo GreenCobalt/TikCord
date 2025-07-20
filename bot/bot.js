@@ -29,6 +29,16 @@ const client = new Client({
 const shardId = client.shard.ids[0];
 log.init(shardId);
 
+/*
+const userErrors = [
+    "NOTFOUND",
+    "unknown video type!",
+    "link is not a valid TikTok video!",
+    "DiscordAPIError[50013]: Missing Permissions"
+];
+*/
+const userErrors = [];
+
 const ramDisk = {
     name: "/dev/shm/tikcord"
 }
@@ -287,7 +297,8 @@ client.on('messageCreate', (message) => {
 
                                         if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                                         client.tiktokstats.dlFReasons[e.toString()]++;
-                                        if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) client.tiktokstats.dlF++;
+                                        
+                                        if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                                     });
                                 } else {
                                     log.error(`[${threadID}] Error sending message (1): ${e}, deleting ${resp}`);
@@ -295,44 +306,39 @@ client.on('messageCreate', (message) => {
 
                                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                                     client.tiktokstats.dlFReasons[e.toString()]++;
-                                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) client.tiktokstats.dlF++;
+                                    if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                                 }
                                 return;
                             });
                         })
                         .catch((e, send) => { // tiktok video download failed
-                            if (send) {
+                            if (send)
+                            {
                                 message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
                                     log.debug(`[${threadID}] Count not send video download failure message to channel: ${e.toString()}`);
                                 });
                             }
-                            log.info(`[${threadID}] Could not download video: ${e}`);
+                            log.info(`[${threadID}] Could not download video (DL): ${e}`);
 
                             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                             client.tiktokstats.dlFReasons[e.toString()]++;
-                            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) client.tiktokstats.dlF++;
-                            return;
+                            if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                         });
                 })
                 .catch((e) => { // api request failed
-                    log.info(`[${threadID}] API Request failed: ${error.response.status}`);
+                    log.info(`[${threadID}] Could not download video (API): ${e}`);
 
                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                     client.tiktokstats.dlFReasons[e.toString()]++;
-                    if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) client.tiktokstats.dlF++;
-                    return;
+                    if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                 });
         })
         .catch((e) => { // initial web request failed
-            message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
-                log.debug(`[${threadID}] Count not send video download failure message to channel: ${e.toString()}`);
-            });
-            log.info(`Could not download video: ${e}`);
+            log.info(`[${threadID}] Could not download video (IR): ${e}`);
 
             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
             client.tiktokstats.dlFReasons[e.toString()]++;
-            if (!(e.toString() == "NOTFOUND" || e.toString() == "NOTVIDEO" || e.toString() == "Cannot download audios!" || e.toString() == "DiscordAPIError[50013]: Missing Permissions")) client.tiktokstats.dlF++;
-            return;
+            if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
         });
     }
 });
