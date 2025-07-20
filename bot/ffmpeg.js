@@ -3,6 +3,8 @@ const fs = require("fs");
 
 const log = require("./log.js");
 
+const maxVideoSize = 20 * 1048576; // 20mb, discord max 25mb
+
 function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSize, pass) {
     let min_audio_bitrate = 32000;
     let max_audio_bitrate = 256000;
@@ -10,13 +12,13 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
     return new Promise((res, rej) => {
         ffmpeg.ffprobe(dir + videoInputPath, (err, probeOut) => {
             if (err) { console.log(err); rej(err); }
-            if (probeOut.format.size > 8 * 1048576) {
+            if (probeOut.format.size > maxVideoSize) {
                 //too big
                 log.debug(`[${threadID}] Shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`);
 
                 let duration = probeOut.format.duration;
                 let audioBitrate = probeOut.streams[1].bit_rate;
-                let targetTotalBitrate = (targetSize * 8388608) /* size in bits */ / (1.1 * duration);
+                let targetTotalBitrate = (targetSize * maxVideoSize) /* size in bits */ / (1.1 * duration);
 
                 if (10 * audioBitrate > targetTotalBitrate) {
                     audioBitrate = targetTotalBitrate / 10;
