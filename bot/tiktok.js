@@ -57,7 +57,7 @@ function getTikTokData(threadID, url) {
             }
         })
         .catch(function (error) {
-            console.log(error);
+            rej(error);
         });
     });
 }
