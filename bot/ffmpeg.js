@@ -3,7 +3,7 @@ const fs = require("fs");
 
 const log = require("./log.js");
 
-const maxVideoSize = 20 * 1048576; // 20mb, discord max 25mb
+const maxVideoSize = 8 * 1048576; // 20mb, discord max 25mb
 
 function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSize, pass) {
     let min_audio_bitrate = 32000;
