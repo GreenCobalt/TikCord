@@ -327,18 +327,20 @@ client.on('messageCreate', (message) => {
                         });
                 })
                 .catch((e) => { // api request failed
+                    let errString = `${e.err.response.status} ${e.err.response.statusText}`;
+                    
                     if (e.send)
                     {
-                        message.reply(`Could not download video: ${e.err.toString()}`).then(() => { }).catch((e2) => {
+                        message.reply(`Could not download video: ${errString}`).then(() => { }).catch((e2) => {
                             log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2.toString()}`);
                         });
                     }
-                            
-                    log.info(`[${threadID}] Could not download video (API): ${e.err.response.status} ${e.err.response.statusText}`); // axios error returned
+                    
+                    log.info(`[${threadID}] Could not download video (API): ${errString}`); // axios error returned
 
-                    if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
-                    client.tiktokstats.dlFReasons[e.toString()]++;
-                    if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
+                    if (!Object.keys(client.tiktokstats.dlFReasons).includes(errString)) client.tiktokstats.dlFReasons[errString] = 0;
+                    client.tiktokstats.dlFReasons[errString]++;
+                    if (!userErrors.includes(errString)) client.tiktokstats.dlF++;
                 });
         })
         .catch((e) => { // initial web request failed            
