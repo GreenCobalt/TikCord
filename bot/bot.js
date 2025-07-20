@@ -252,10 +252,11 @@ client.on('messageCreate', (message) => {
                             promise = tiktok.downloadSlide(threadID, url, data[1], data[2]);
                             break;
                         case tiktok.VidTypes.Invalid:
-                            promise = new Promise((res, rej) => { rej(data[1], data[2]); });
+                            promise = new Promise((res, rej) => { rej({err: data[1], send: data[2]}); });
                             break;
                         default:
-                            promise = new Promise((res, rej) => { rej("BADTYPE"); });
+                            promise = new Promise((res, rej) => { rej({err: "BADTYPE (NH)", send: false}); });
+                            break;
                     }
 
                     promise
@@ -297,7 +298,6 @@ client.on('messageCreate', (message) => {
 
                                         if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                                         client.tiktokstats.dlFReasons[e.toString()]++;
-                                        
                                         if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                                     });
                                 } else {
@@ -311,18 +311,19 @@ client.on('messageCreate', (message) => {
                                 return;
                             });
                         })
-                        .catch((e, send) => { // tiktok video download failed
-                            if (send)
+                        .catch((e) => { // tiktok video download failed
+                            if (e.send)
                             {
-                                message.reply(`Could not download video: ${e}`).then(() => { }).catch((e) => {
-                                    log.debug(`[${threadID}] Count not send video download failure message to channel: ${e.toString()}`);
+                                message.reply(`Could not download video: ${e.err.toString()}`).then(() => { }).catch((e2) => {
+                                    log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2.toString()}`);
                                 });
                             }
-                            log.info(`[${threadID}] Could not download video (DL, sending message: ${send}): ${e}`);
+                            
+                            log.info(`[${threadID}] Could not download video (DL, sending message: ${e.send}): ${e.err.toString()}`);
 
-                            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
-                            client.tiktokstats.dlFReasons[e.toString()]++;
-                            if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
+                            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.err.toString()] = 0;
+                            client.tiktokstats.dlFReasons[e.err.toString()]++;
+                            if (!userErrors.includes(e.err.toString())) client.tiktokstats.dlF++;
                         });
                 })
                 .catch((e) => { // api request failed
@@ -333,7 +334,7 @@ client.on('messageCreate', (message) => {
                     if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                 });
         })
-        .catch((e) => { // initial web request failed
+        .catch((e) => { // initial web request failed            
             log.info(`[${threadID}] Could not download video (IR): ${e}`);
 
             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
