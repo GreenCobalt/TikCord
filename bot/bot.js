@@ -318,7 +318,7 @@ client.on('messageCreate', (message) => {
                                     log.debug(`[${threadID}] Count not send video download failure message to channel: ${e.toString()}`);
                                 });
                             }
-                            log.info(`[${threadID}] Could not download video (DL): ${e}`);
+                            log.info(`[${threadID}] Could not download video (DL, sending message: ${send}): ${e}`);
 
                             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
                             client.tiktokstats.dlFReasons[e.toString()]++;
