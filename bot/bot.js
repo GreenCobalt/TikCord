@@ -141,11 +141,12 @@ client.on('ready', () => {
 });
 
 client.on('guildCreate', async guild => {
-	log.info(`Joined: ${guild.name} (${guild.memberCount} members)`)
+	log.info(`Added: ${guild.name} (${guild.memberCount} members)`)
 });
 
 client.on('guildDelete', async guild => {
-	log.info(`Removed: ${guild.name} (${guild.memberCount} members)`)
+    if (guild && guild.name)
+	    log.info(`Removed: ${guild.name} (${guild.memberCount} members)`)
 });
 
 // slash command handle
