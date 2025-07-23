@@ -33,6 +33,7 @@ const userErrors = [
     "NOTFOUND",
     "unknown video type!",
     "link is not a valid TikTok video!",
+    "the video file is too big to be compressed to Discord's 8MB max!",
     "DiscordAPIError[50013]: Missing Permissions"
 ];
 
