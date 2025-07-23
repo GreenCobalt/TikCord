@@ -4,19 +4,19 @@ function init(sId) {
 }
 
 function error(message) {
-    console.log(`[${shardId.padStart(2)}] [E] ${message}`);
+    console.log(`[${shardId.toString().padStart(2)}] [E] ${message}`);
 }
 
 function warn(message) {
-    console.log(`[${shardId.padStart(2)}] [W] ${message}`);
+    console.log(`[${shardId.toString().padStart(2)}] [W] ${message}`);
 }
 
 function info(message) {
-    console.log(`[${shardId.padStart(2)}] [I] ${message}`);
+    console.log(`[${shardId.toString().padStart(2)}] [I] ${message}`);
 }
 
 function debug(message) {
-    console.log(`[${shardId.padStart(2)}] [D] ${message}`);
+    console.log(`[${shardId.toString().padStart(2)}] [D] ${message}`);
 }
 
 module.exports = { init, debug, info, warn, error }
