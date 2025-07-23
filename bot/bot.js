@@ -191,11 +191,14 @@ client.on('interactionCreate', async interaction => {
 });
 
 function randomAZ(n = 5) {
+    return (Math.floor(Math.random()*90000) + 10000).toString();
+    /*
     return Array(n)
         .fill(null)
         .map(() => Math.random() * 100 % 25 + 'A'.charCodeAt(0))
         .map(a => String.fromCharCode(a))
         .join('');
+    */
 }
 
 client.on('messageCreate', (message) => {
@@ -277,7 +280,7 @@ client.on('messageCreate', (message) => {
                                 });
                             }).catch((e) => {
                                 console.log(e);
-                                
+
                                 if (e.code == 50035 /* invalid form body */ || e.code == 160002 /* no permission to reply due to message history */) {
                                     message.channel.send({ files: [resp] }).then(() => {
                                         //could not reply to embed, sending regularly

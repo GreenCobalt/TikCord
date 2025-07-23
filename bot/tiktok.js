@@ -35,7 +35,7 @@ function getTikTokData(threadID, url) {
         }
 
         log.debug(`[${threadID}] Regex returned ID ${urlRe.groups.id}`);
-        // log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
+        log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
         axios({
             method: 'get',
             url: `http://${api}/api/hybrid/video_data?url=${url}`
@@ -95,6 +95,7 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
         let id = ogURL.split("?")[0].split("/")[5];
         let promises = [];
 
+        // create audio download promise
         promises.push(new Promise((res, rej) => {
             let filePath = `${ramDisk.name}/images/${id}_${threadID}_0.mp3`;
             let file = fs.createWriteStream(filePath);
@@ -113,6 +114,8 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
                 });
             });
         }));
+
+        // create image download promises
         Object.keys(imageURLs).forEach((imageURLkey) => {
             promises.push(new Promise((res, rej) => {
                 let filePath = `${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}.jpg`;
@@ -142,6 +145,7 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
             }));
         });
 
+        // execute all promises and wait for completion
         Promise.all(promises).then((results) => {
             let dir = `${ramDisk.name}/videos/`;
             let videoName = `${id}_${threadID}.mp4`;
