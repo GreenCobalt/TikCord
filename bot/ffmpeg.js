@@ -11,7 +11,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
 
     return new Promise((res, rej) => {
         ffmpeg.ffprobe(dir + videoInputPath, (err, probeOut) => {
-            if (err) { console.log(f'FFPROBE COMPRESS ERROR ${err}'); rej(err); }
+            if (err) { console.log(`FFPROBE COMPRESS ERROR ${err}`); rej(err); }
 
             if (probeOut.format.size > maxVideoSize) {
                 //too big
@@ -34,7 +34,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                         '-preset ultrafast'
                     ])
                     .on('error', (err, stdout, stderr) => {
-                        console.log(f'FFMPEG COMPRESS ERROR ${stderr}');
+                        console.log(`FFMPEG COMPRESS ERROR ${stderr}`);
                         rej();
                     })
                     .on('end', () => {
