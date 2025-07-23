@@ -279,8 +279,12 @@ client.on('messageCreate', (message) => {
                                         }
                                     }
                                 });
-                            }).catch((e) => {
-                                if (e.code == 50035 /* invalid form body */ || e.code == 160002 /* no permission to reply due to message history */) {
+                            }).catch((e_try1) => {
+                                if (
+                                    e_try1.code == 50013 /* no permission to reply to message, try sending plain */ ||
+                                    e_try1.code == 50035 /* link message was deleted */ || 
+                                    e_try1.code == 160002 /* no permission to reply due to message history */
+                                ) {
                                     message.channel.send({ files: [resp] }).then(() => {
                                         //could not reply to embed, sending regularly
                                         log.info(`[${threadID}] Message sent (channel), deleting ${resp}`);
@@ -293,48 +297,52 @@ client.on('messageCreate', (message) => {
                                                 message.suppressEmbeds(true);
                                             }
                                         });
-                                    }).catch((e) => {
-                                        log.error(`[${threadID}] Error sending message to channel: ${e} ${e.message}, deleting ${resp}`);
+                                    }).catch((e_try2) => {
+                                        let errString = `${e_try2} (${e_try2.message})`;
+
+                                        log.error(`[${threadID}] Error sending message to channel: ${errString}, deleting ${resp}`);
                                         fs.unlinkSync(resp);
 
-                                        if (!Object.keys(client.tiktokstats.dlFReasons).includes(`${e} ${e.message}`)) client.tiktokstats.dlFReasons[`${e} ${e.message}`] = 0;
-                                        client.tiktokstats.dlFReasons[`${e} ${e.message}`]++;
-                                        if (!userErrors.includes(`${e} ${e.message}`)) client.tiktokstats.dlF++;
+                                        if (!Object.keys(client.tiktokstats.dlFReasons).includes(``)) client.tiktokstats.dlFReasons[`${errString}`] = 0;
+                                        client.tiktokstats.dlFReasons[`${errString}`]++;
+                                        if (!userErrors.includes(`${errString}`)) client.tiktokstats.dlF++;
                                     });
                                 } else {
-                                    log.error(`[${threadID}] Error sending message as reply, not in retry list: ${e} ${e.message}, deleting ${resp}`);
+                                    let errString = `${e_try1} (${e_try1.message})`;
+
+                                    log.error(`[${threadID}] Error sending message as reply, not in retry list: ${errString}, deleting ${resp}`);
                                     fs.unlinkSync(resp);
 
-                                    if (!Object.keys(client.tiktokstats.dlFReasons).includes(`${e} ${e.message}`)) client.tiktokstats.dlFReasons[`${e} ${e.message}`] = 0;
-                                    client.tiktokstats.dlFReasons[`${e} ${e.message}`]++;
-                                    if (!userErrors.includes(`${e} ${e.message}`)) client.tiktokstats.dlF++;
+                                    if (!Object.keys(client.tiktokstats.dlFReasons).includes(`${errString}`)) client.tiktokstats.dlFReasons[`${errString}`] = 0;
+                                    client.tiktokstats.dlFReasons[`${errString}`]++;
+                                    if (!userErrors.includes(`${errString}`)) client.tiktokstats.dlF++;
                                 }
                                 return;
                             });
                         })
-                        .catch((e) => { // tiktok video download failed
-                            if (e.send)
+                        .catch((e_dl) => { // tiktok video download failed
+                            if (e_dl.send)
                             {
-                                message.reply(`Could not download video: ${e.err}`).then(() => { }).catch((e2) => {
-                                    log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2.toString()}`);
+                                message.reply(`Could not download video: ${e_dl.err}`).then(() => { }).catch((e_send) => {
+                                    log.debug(`[${threadID}] Count not send video download failure message to channel: ${e_send.toString()}`);
                                 });
                             }
                             
-                            log.info(`[${threadID}] Could not download video (DL, sending message: ${e.send}): ${e.err}`);
+                            log.info(`[${threadID}] Could not download video (DL, sending message: ${e_dl.send}): ${e_dl.err}`);
 
-                            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e)) client.tiktokstats.dlFReasons[e.err] = 0;
-                            client.tiktokstats.dlFReasons[e.err]++;
+                            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e_dl.err)) client.tiktokstats.dlFReasons[e_dl.err] = 0;
+                            client.tiktokstats.dlFReasons[e_dl.err]++;
 
-                            if (!userErrors.includes(e.err)) client.tiktokstats.dlF++;
+                            if (!userErrors.includes(e_dl.err)) client.tiktokstats.dlF++;
                         });
                 })
-                .catch((e) => { // api request failed
-                    let errString = `API ${e.err.response.status} ${e.err.response.statusText}`;
+                .catch((e_api) => { // api request failed
+                    let errString = `API ${e_api.err.response.status} ${e_api.err.response.statusText}`;
                     
-                    if (e.send)
+                    if (e_api.send)
                     {
-                        message.reply(`Could not download video: ${errString}`).then(() => { }).catch((e2) => {
-                            log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2.toString()}`);
+                        message.reply(`Could not download video: ${errString}`).then(() => { }).catch((e_send) => {
+                            log.debug(`[${threadID}] Count not send video download failure message to channel: ${e_send.toString()}`);
                         });
                     }
                     
@@ -346,13 +354,13 @@ client.on('messageCreate', (message) => {
                     if (!userErrors.includes(errString)) client.tiktokstats.dlF++;
                 });
         })
-        .catch((e) => { // initial web request failed            
-            log.info(`[${threadID}] Could not download video (IR): ${e.toString()}`);
+        .catch((e_initialweb) => { // initial web request failed            
+            log.info(`[${threadID}] Could not download video (IR): ${e_initialweb.toString()}`);
 
-            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
-            client.tiktokstats.dlFReasons[e.toString()]++;
+            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e_initialweb.toString())) client.tiktokstats.dlFReasons[e_initialweb.toString()] = 0;
+            client.tiktokstats.dlFReasons[e_initialweb.toString()]++;
 
-            if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
+            if (!userErrors.includes(e_initialweb.toString())) client.tiktokstats.dlF++;
         });
     }
 });
