@@ -108,6 +108,11 @@ client.tiktokstats = {
 client.on('ready', () => {
     log.info(`Logged in as ${client.user.tag}!`);
 
+    const largestGuilds = client.guilds.cache
+        .sort((a, b) => b.memberCount - a.memberCount)
+        .first(3);
+    log.info(`Largest guilds:\n\t"${largestGuilds[0].name}" (${largestGuilds[0].memberCount})\n\t"${largestGuilds[1].name}" (${largestGuilds[1].memberCount})\n\t"${largestGuilds[2].name}" (${largestGuilds[2].memberCount})`);
+
     const CLIENT_ID = client.user.id;
     const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
     (async () => {
