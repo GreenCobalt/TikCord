@@ -27,26 +27,31 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                 }
                 let videoBitrate = targetTotalBitrate - audioBitrate;
 
-                log.debug(`[${threadID}] Target video bitrate: ${videoBitrate}, audio bitrate: ${audioBitrate}, total: ${targetTotalBitrate}`);
-
-                ffmpeg(dir + videoInputPath, { logger: log })
-                    .outputOptions([
-                        '-b:v ' + videoBitrate,
-                        '-b:a ' + audioBitrate,
-                        '-preset ultrafast'
-                    ])
-                    .on('error', (err, stdout, stderr) => {
-                        console.log(`FFMPEG COMPRESS ERROR ${err}`);
-                        rej(err);
-                    })
-                    .on('end', () => {
-                        fs.unlinkSync(dir + videoInputPath);
-                        fs.stat(dir + videoOutputPath, (err, stats) => {
-                            log.debug(`[${threadID}] Encode done (${stats.size / 1048576}MB) - pass ${pass}`);
-                            res(dir + videoOutputPath);
-                        });
-                    })
-                    .save(dir + videoOutputPath);
+                if (videoBitrate < 0 || audioBitrate < 0 || targetTotalBitrate < 0)
+                {
+                    rej({e: "the video file is too big to be compressed to Discord's 8MB max!", send: true});
+                }
+                else
+                {
+                    ffmpeg(dir + videoInputPath, { logger: log })
+                        .outputOptions([
+                            '-b:v ' + videoBitrate,
+                            '-b:a ' + audioBitrate,
+                            '-preset ultrafast'
+                        ])
+                        .on('error', (err, stdout, stderr) => {
+                            console.log(`FFMPEG COMPRESS ERROR ${err}`);
+                            rej({e: err, send: false});
+                        })
+                        .on('end', () => {
+                            fs.unlinkSync(dir + videoInputPath);
+                            fs.stat(dir + videoOutputPath, (err, stats) => {
+                                log.debug(`[${threadID}] Encode done (${stats.size / 1048576}MB) - pass ${pass}`);
+                                res(dir + videoOutputPath);
+                            });
+                        })
+                        .save(dir + videoOutputPath);
+                }
             } else {
                 //small enough
                 log.debug(`[${threadID}] Not shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`); //mebibyte

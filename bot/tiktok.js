@@ -16,7 +16,7 @@ const VidTypes = {
 };
 
 const axios = require('axios');
-const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data).catch((e) => { log.info(e); });
+const getURLContent = (url) => axios({ url, responseType: 'arraybuffer' }).then(res => res.data);
 
 let ramDisk;
 function init(disk) {
@@ -84,7 +84,7 @@ function downloadVideo(threadID, ogURL, vidURL) {
                     .then((compressedName) => {
                         res(compressedName);
                     })
-                    .catch((e) => { rej({err: e, send: false}); });
+                    .catch((e) => { rej(e); });
             }).catch((e) => { rej({err: e, send: false}); });
         }
     });
@@ -163,7 +163,7 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
 
                 ffmpegutils.compressVideo(threadID, dir, videoName, pass1Name, 8, 1).then((encodedName) => {
                     res(encodedName);
-                }).catch((e) => { rej({err: e, send: false}); });
+                }).catch((e) => { rej(e); });
             });
         });
     });

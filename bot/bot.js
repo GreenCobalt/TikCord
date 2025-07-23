@@ -279,8 +279,6 @@ client.on('messageCreate', (message) => {
                                     }
                                 });
                             }).catch((e) => {
-                                console.log(e.message);
-
                                 if (e.code == 50035 /* invalid form body */ || e.code == 160002 /* no permission to reply due to message history */) {
                                     message.channel.send({ files: [resp] }).then(() => {
                                         //could not reply to embed, sending regularly
@@ -295,20 +293,20 @@ client.on('messageCreate', (message) => {
                                             }
                                         });
                                     }).catch((e) => {
-                                        log.error(`[${threadID}] Error sending message to channel: ${e.toString()}, deleting ${resp}`);
+                                        log.error(`[${threadID}] Error sending message to channel: ${e} ${e.message}, deleting ${resp}`);
                                         fs.unlinkSync(resp);
 
-                                        if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
-                                        client.tiktokstats.dlFReasons[e.toString()]++;
-                                        if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
+                                        if (!Object.keys(client.tiktokstats.dlFReasons).includes(`${e} ${e.message}`)) client.tiktokstats.dlFReasons[`${e} ${e.message}`] = 0;
+                                        client.tiktokstats.dlFReasons[`${e} ${e.message}`]++;
+                                        if (!userErrors.includes(`${e} ${e.message}`)) client.tiktokstats.dlF++;
                                     });
                                 } else {
-                                    log.error(`[${threadID}] Error sending message as reply, not in retry list: ${e}, deleting ${resp}`);
+                                    log.error(`[${threadID}] Error sending message as reply, not in retry list: ${e} ${e.message}, deleting ${resp}`);
                                     fs.unlinkSync(resp);
 
-                                    if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
-                                    client.tiktokstats.dlFReasons[e.toString()]++;
-                                    if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
+                                    if (!Object.keys(client.tiktokstats.dlFReasons).includes(`${e} ${e.message}`)) client.tiktokstats.dlFReasons[`${e} ${e.message}`] = 0;
+                                    client.tiktokstats.dlFReasons[`${e} ${e.message}`]++;
+                                    if (!userErrors.includes(`${e} ${e.message}`)) client.tiktokstats.dlF++;
                                 }
                                 return;
                             });
