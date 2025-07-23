@@ -13,8 +13,8 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
         ffmpeg.ffprobe(dir + videoInputPath, (err, probeOut) => {
             if (err) { console.log(`FFPROBE COMPRESS ERROR ${err}`); rej(err); }
 
+            // too big
             if (probeOut.format.size > maxVideoSize) {
-                //too big
                 log.debug(`[${threadID}] Shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`);
 
                 let duration = probeOut.format.duration;
@@ -27,6 +27,8 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                 }
                 let videoBitrate = targetTotalBitrate - audioBitrate;
 
+                log.debug(`[${threadID}] Target video bitrate: ${videoBitrate}, audio bitrate: ${audioBitrate}, total: ${targetTotalBitrate}`);
+
                 ffmpeg(dir + videoInputPath, { logger: log })
                     .outputOptions([
                         '-b:v ' + videoBitrate,
@@ -34,7 +36,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                         '-preset ultrafast'
                     ])
                     .on('error', (err, stdout, stderr) => {
-                        console.log(`FFMPEG COMPRESS ERROR ${err} ${stderr}`);
+                        console.log(`FFMPEG COMPRESS ERROR ${err}`);
                         rej(err);
                     })
                     .on('end', () => {
