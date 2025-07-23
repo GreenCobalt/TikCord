@@ -151,7 +151,8 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
             let videoName = `${id}_${threadID}.mp4`;
             let pass1Name = `${id}_${threadID}_pass1.mp4`;
 
-            let ffmpegExec = exec(`ffmpeg -hide_banner -loglevel error -r 1/2.5 -start_number 0 -i ${ramDisk.name}/images/${id}_${threadID}_%01d_c.jpg -i ${ramDisk.name}/images/${id}_${threadID}_0.mp3 -map 0 -map 1 -shortest -c:v libx264 -vf "scale=\'if(gt(a*sar,16/9),640,360*iw*sar/ih)\':\'if(gt(a*sar,16/9),640*ih/iw/sar,360)\',pad=640:360:(ow-iw)/2:(oh-ih)/2,setsar=1" -r 30 -pix_fmt yuv420p ${ramDisk.name}/videos/${videoName}`, (error, stdout, stderr) => {
+            // removed -shortest
+            let ffmpegExec = exec(`ffmpeg -hide_banner -loglevel error -r 1/2.5 -start_number 0 -i ${ramDisk.name}/images/${id}_${threadID}_%01d_c.jpg -i ${ramDisk.name}/images/${id}_${threadID}_0.mp3 -map 0 -map 1 -c:v libx264 -vf "scale=\'if(gt(a*sar,16/9),640,360*iw*sar/ih)\':\'if(gt(a*sar,16/9),640*ih/iw/sar,360)\',pad=640:360:(ow-iw)/2:(oh-ih)/2,setsar=1" -r 30 -pix_fmt yuv420p ${ramDisk.name}/videos/${videoName}`, (error, stdout, stderr) => {
                 if (error || stderr) { console.log(`FFMPEG SLIDESHOW ERROR: ${error}, ${stderr}`); return; }
             });
             ffmpegExec.stdout.pipe(process.stdout);
