@@ -85,9 +85,9 @@ function downloadVideo(threadID, ogURL, vidURL) {
                         res(compressedName);
                     })
                     .catch((e) => {
-                        fs.unlinkSync(dir + ogName);
-                        fs.unlinkSync(dir + pass1Name);
-                        
+                        fs.unlinkSync(dir + ogName); // remove original file, it cannot be sent or compressed
+                        // fs.unlinkSync(dir + pass1Name); // do not remove encoded file, ffmpeg.js returned before ffmpeg was called
+
                         rej(e);
                     });
             }).catch((e) => { rej({err: e, send: false}); });
