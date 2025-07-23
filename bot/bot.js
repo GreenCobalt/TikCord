@@ -105,8 +105,24 @@ client.tiktokstats = {
     dlFReasons: {}
 };
 
+function randomAZ(n = 5) {
+    return (Math.floor(Math.random()*90000) + 10000).toString();
+    /*
+    return Array(n)
+        .fill(null)
+        .map(() => Math.random() * 100 % 25 + 'A'.charCodeAt(0))
+        .map(a => String.fromCharCode(a))
+        .join('');
+    */
+}
+
 client.on('ready', () => {
     log.info(`Logged in as ${client.user.tag}!`);
+
+    log.info(`Largest guilds:`);
+    client.guilds.cache.sort((a, b) => b.memberCount - a.memberCount).first(3).forEach((guild) => {
+        log.info(`\t - "${guild.name}" (${guild.memberCount})`);
+    });
 
     const CLIENT_ID = client.user.id;
     const rest = new REST({ version: '9' }).setToken(process.env.TOKEN);
@@ -124,6 +140,15 @@ client.on('ready', () => {
     })();
 });
 
+client.on('guildCreate', async guild => {
+	log.info(`Joined: ${guild.name} (${guild.memberCount} members)`)
+});
+
+client.on('guildDelete', async guild => {
+	log.info(`Removed: ${guild.name} (${guild.memberCount} members)`)
+});
+
+// slash command handle
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -191,17 +216,7 @@ client.on('interactionCreate', async interaction => {
     } else { }
 });
 
-function randomAZ(n = 5) {
-    return (Math.floor(Math.random()*90000) + 10000).toString();
-    /*
-    return Array(n)
-        .fill(null)
-        .map(() => Math.random() * 100 % 25 + 'A'.charCodeAt(0))
-        .map(a => String.fromCharCode(a))
-        .join('');
-    */
-}
-
+// message handle
 client.on('messageCreate', (message) => {
     if (message.content.includes("https://") && message.content.includes("tiktok.com")) {
         linkRegex.lastIndex = 0;
@@ -223,7 +238,7 @@ client.on('messageCreate', (message) => {
                 request(url, {
                     headers: {
                         //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.81 Safari/537.36"
-                    }
+                    }   
                 })
                 .then((resp) => {
                     //log.info(`Redirect to ${resp.request.res.responseUrl}`);
