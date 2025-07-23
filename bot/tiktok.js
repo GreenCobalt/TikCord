@@ -84,8 +84,8 @@ function downloadVideo(threadID, ogURL, vidURL) {
                     .then((compressedName) => {
                         res(compressedName);
                     })
-                    .catch((e) => { log.error(e); rej({err: e, send: false}); });
-            }).catch((e) => { log.error(e); rej({err: e, send: false}); });
+                    .catch((e) => { rej({err: e, send: false}); });
+            }).catch((e) => { rej({err: e, send: false}); });
         }
     });
 }
@@ -163,7 +163,7 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
 
                 ffmpegutils.compressVideo(threadID, dir, videoName, pass1Name, 8, 1).then((encodedName) => {
                     res(encodedName);
-                }).catch((e) => { log.error(e); rej({err: e, send: false}); });
+                }).catch((e) => { rej({err: e, send: false}); });
             });
         });
     });

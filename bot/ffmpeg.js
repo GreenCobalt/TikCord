@@ -34,8 +34,8 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                         '-preset ultrafast'
                     ])
                     .on('error', (err, stdout, stderr) => {
-                        console.log(`FFMPEG COMPRESS ERROR ${stderr}`);
-                        rej();
+                        console.log(`FFMPEG COMPRESS ERROR ${err} ${stderr}`);
+                        rej(err);
                     })
                     .on('end', () => {
                         fs.unlinkSync(dir + videoInputPath);
