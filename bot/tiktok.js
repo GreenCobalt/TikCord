@@ -84,7 +84,12 @@ function downloadVideo(threadID, ogURL, vidURL) {
                     .then((compressedName) => {
                         res(compressedName);
                     })
-                    .catch((e) => { rej(e); });
+                    .catch((e) => {
+                        fs.unlinkSync(dir + ogName);
+                        fs.unlinkSync(dir + pass1Name);
+                        
+                        rej(e);
+                    });
             }).catch((e) => { rej({err: e, send: false}); });
         }
     });

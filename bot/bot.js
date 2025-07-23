@@ -312,12 +312,10 @@ client.on('messageCreate', (message) => {
                             });
                         })
                         .catch((e) => { // tiktok video download failed
-                            console.log(e);
-
                             if (e.send)
                             {
                                 message.reply(`Could not download video: ${e.err}`).then(() => { }).catch((e2) => {
-                                    log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2}`);
+                                    log.debug(`[${threadID}] Count not send video download failure message to channel: ${e2.toString()}`);
                                 });
                             }
                             
