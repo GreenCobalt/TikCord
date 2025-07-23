@@ -321,6 +321,7 @@ client.on('messageCreate', (message) => {
                                 });
                             }
                             
+                            console.log(e, e.err);
                             log.info(`[${threadID}] Could not download video (DL, sending message: ${e.send}): ${e.err.toString()}`);
 
                             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.err.toString()] = 0;

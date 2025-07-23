@@ -35,7 +35,7 @@ function getTikTokData(threadID, url) {
         }
 
         log.debug(`[${threadID}] Regex returned ID ${urlRe.groups.id}`);
-        log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
+        // log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
         axios({
             method: 'get',
             url: `http://${api}/api/hybrid/video_data?url=${url}`
