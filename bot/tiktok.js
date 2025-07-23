@@ -34,7 +34,7 @@ function getTikTokData(threadID, url) {
             res([VidTypes.Invalid, "link is not a valid TikTok video!", false]);
         }
 
-        log.debug(`[${threadID}] Regex returned ID ${urlRe.groups.id}`);
+        // log.debug(`[${threadID}] Regex returned ID ${urlRe.groups.id}`);
         // log.debug(`[${threadID}] Requesting http://${api}/api/hybrid/video_data?url=${url}`);
         axios({
             method: 'get',
@@ -42,7 +42,7 @@ function getTikTokData(threadID, url) {
         })
         .then(function (response) {
             let result = response.data;
-            log.debug(`[${threadID}] API Data Length ${JSON.stringify(result).length}`);
+            // log.debug(`[${threadID}] API Data Length ${JSON.stringify(result).length}`);
 
             if (Object.keys(result.data).includes("image_post_info")) {
                 let images = [];
