@@ -170,6 +170,8 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
                     res(encodedName);
                 }).catch((e) => { rej(e); });
             });
+        }).catch((err) => {
+            log.info(`${threadID} A slideshow download Promise rejected: ${err.toString()}`);
         });
     });
 }
