@@ -279,7 +279,7 @@ client.on('messageCreate', (message) => {
                                     }
                                 });
                             }).catch((e) => {
-                                console.log(e);
+                                console.log(e.message);
 
                                 if (e.code == 50035 /* invalid form body */ || e.code == 160002 /* no permission to reply due to message history */) {
                                     message.channel.send({ files: [resp] }).then(() => {
