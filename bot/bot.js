@@ -276,7 +276,9 @@ client.on('messageCreate', (message) => {
                                     }
                                 });
                             }).catch((e) => {
-                                if (e.code == 50035) {
+                                console.log(e);
+                                
+                                if (e.code == 50035 /* invalid form body */ || e.code == 160002 /* no permission to reply due to message history */) {
                                     message.channel.send({ files: [resp] }).then(() => {
                                         //could not reply to embed, sending regularly
                                         log.info(`[${threadID}] Message sent (channel), deleting ${resp}`);
@@ -290,7 +292,7 @@ client.on('messageCreate', (message) => {
                                             }
                                         });
                                     }).catch((e) => {
-                                        log.error(`[${threadID}] Error sending message (2): ${e.toString()}, deleting ${resp}`);
+                                        log.error(`[${threadID}] Error sending message to channel: ${e.toString()}, deleting ${resp}`);
                                         fs.unlinkSync(resp);
 
                                         if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
@@ -298,7 +300,7 @@ client.on('messageCreate', (message) => {
                                         if (!userErrors.includes(e.toString())) client.tiktokstats.dlF++;
                                     });
                                 } else {
-                                    log.error(`[${threadID}] Error sending message (1): ${e}, deleting ${resp}`);
+                                    log.error(`[${threadID}] Error sending message as reply, not in retry list: ${e}, deleting ${resp}`);
                                     fs.unlinkSync(resp);
 
                                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(e.toString())) client.tiktokstats.dlFReasons[e.toString()] = 0;
