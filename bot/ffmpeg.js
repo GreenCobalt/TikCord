@@ -29,7 +29,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
 
                 if (videoBitrate < 0 || audioBitrate < 0 || targetTotalBitrate < 0)
                 {
-                    rej({e: "the video file is too big to be compressed to Discord's 8MB max!", send: true});
+                    rej({err: "the video file is too big to be compressed to Discord's 8MB max!", send: true});
                 }
                 else
                 {
@@ -41,7 +41,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                         ])
                         .on('error', (err, stdout, stderr) => {
                             console.log(`FFMPEG COMPRESS ERROR ${err}`);
-                            rej({e: err, send: false});
+                            rej({err: err, send: false});
                         })
                         .on('end', () => {
                             fs.unlinkSync(dir + videoInputPath);
