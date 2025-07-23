@@ -66,7 +66,7 @@ function downloadVideo(threadID, ogURL, vidURL) {
     return new Promise((res, rej) => {
         if (vidURL == undefined) {
             log.warn("vidURL is undefined!");
-            rej("NOTFOUND");
+            rej({err: "NOTFOUND", send: false});
         } else {
             let id = ogURL.split("?")[0].split("/")[5];
 
@@ -128,7 +128,7 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
                             sharp(`${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}.jpg`)
                                 .toColourspace('srgb')
                                 .toFile(`${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}_c.jpg`, (err, info) => {
-                                    if (err) { rej(err); return; }
+                                    if (err) { console.log(`SHARP ERROR ${err}`); rej(err); return; }
 
                                     fs.unlinkSync(`${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}.jpg`);
                                     res(`${ramDisk.name}/images/${id}_${threadID}_${imageURLkey}_c.jpg`);
