@@ -65,7 +65,8 @@ const commands = [
                 ))
 ];
 const test_commands = [
-    new SlashCommandBuilder().setName("shards").setDescription("get list of shards")
+    new SlashCommandBuilder().setName("shards").setDescription("get list of shards"),
+    new SlashCommandBuilder().setName("gc").setDescription("runs GC on the current shard")
 ];
 
 const linkRegex = /(?<url>https?:\/\/(?<domain>(www\.)?(?<subdomain>vm\.|vt\.)?tiktok\.com)(\/t)?\/((?<uID>@[^\/]*)\/(?<linkType>video|photo)\/(?<vID>\d*)|(?<sID>[a-zA-Z0-9\-@_]+))\/?)/;
@@ -214,6 +215,14 @@ client.on('interactionCreate', async interaction => {
 
                 interaction.reply({ embeds: [embed] });
             });
+    } else if (interaction.commandName === "gc") {
+        global.gc();
+
+        const embed = new EmbedBuilder()
+            .setTitle(`✅ Ran garbage collector on shard ${shardId}`)
+            .setColor('#004400')
+            .setTimestamp();
+        interaction.reply({ embeds: [embed]});
     } else { }
 });
 
