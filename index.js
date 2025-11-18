@@ -1,4 +1,5 @@
 const { ShardingManager } = require('discord.js');
+const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -17,6 +18,13 @@ const sites = {
         token: process.env.DBL_TOKEN
     }
 };
+
+const influxDB = new InfluxDB({ 
+    'url': '192.168.1.21:8086',
+    'token': 'wXKQn0zAxPTuqssBfYMJSj1mbSqAjiul2cAX7TXOGL-cK_eR3Gnf2Ok3mcfJQh9v0R5mSmRZo7guRjmn7o6wlA=='
+});
+const writeApi = influxDB.getWriteApi('snadol', 'tikcord');
+// writeApi.useDefaultTags({region: 'west'});
 
 function reduceObj(ex, add) {
     Object.keys(add).forEach((key) => {
@@ -82,6 +90,30 @@ function updateServerCount() {
     });
 }
 
+function updateMemory()
+{
+    let memPoints = [];
+    manager.broadcastEval(() => {
+        const memory = process.memoryUsage();
+        return {
+            shardId: process.env.SHARD_ID, // You might need to set this env var in the shard process
+            rss: memory.rss, // Resident Set Size
+            heapTotal: memory.heapTotal,
+            heapUsed: memory.heapUsed,
+            external: memory.external,
+            arrayBuffers: memory.arrayBuffers,
+        };
+    }).then((results) => {
+        results.forEach((r) => {
+            memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'rss').uintField('value', r.rss));
+            memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'arrayBuffers').uintField('value', r.arrayBuffers));
+        });
+    });
+
+    writeApi.writePoints(memPoints);
+    writeApi.flush();
+}
+
 const manager = new ShardingManager('./bot/bot.js', { 
     token: process.env.TOKEN, 
     totalShards: parseInt(process.env.SHARD_COUNT) ,
@@ -91,7 +123,9 @@ manager.spawn({
     delay: 500
 }).then(() => {
     updateServerCount();
+    updateMemory();
     setInterval(updateServerCount, 30 * 1000);
+    setInterval(updateMemory, 10 * 1000);
 });
 
 process.on('SIGINT', function () {
