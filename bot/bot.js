@@ -27,6 +27,7 @@ const client = new Client({
 });
 
 const shardId = client.shard.ids[0];
+process.env.SHARD_ID = shardId;
 log.init(shardId);
 
 const userErrors = [

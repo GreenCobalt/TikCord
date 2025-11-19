@@ -19,10 +19,7 @@ const sites = {
     }
 };
 
-const influxDB = new InfluxDB({ 
-    'url': '192.168.1.21:8086',
-    'token': 'wXKQn0zAxPTuqssBfYMJSj1mbSqAjiul2cAX7TXOGL-cK_eR3Gnf2Ok3mcfJQh9v0R5mSmRZo7guRjmn7o6wlA=='
-});
+const influxDB = new InfluxDB({'url': 'http://192.168.1.21:8086', 'token': 'wXKQn0zAxPTuqssBfYMJSj1mbSqAjiul2cAX7TXOGL-cK_eR3Gnf2Ok3mcfJQh9v0R5mSmRZo7guRjmn7o6wlA=='});
 const writeApi = influxDB.getWriteApi('snadol', 'tikcord');
 // writeApi.useDefaultTags({region: 'west'});
 
@@ -36,7 +33,7 @@ function reduceObj(ex, add) {
 
 let sinceWebsiteUpdated = 10;
 function updateServerCount() {
-    manager.broadcastEval((client) => [client.guilds.cache, client.tiktokstats]).then((shards) => {
+    manager.broadcastEval((client) => [client.guilds.cache, client.tiktokstats, process.env.SHARD_ID]).then((shards) => {
         let serverCount = shards.reduce((total, shard) => total + shard[0].length, 0);
         let memberCount = shards.reduce((total, shard) => total + shard[0].reduce((members, guild) => members + guild.memberCount, 0), 0);
 
@@ -86,6 +83,16 @@ function updateServerCount() {
                 .catch((error) => {
                     console.log(`Failed to send stats to mananger: ${error}`);
                 });
+
+	    let points = [];
+	    shards.forEach((s) => {
+		points.push(new Point('downloads').tag('shard', s[2]).tag('success', 1).uintField('value', s[1].dlS));
+		points.push(new Point('downloads').tag('shard', s[2]).tag('success', 0).uintField('value', s[1].dlF));
+	        points.push(new Point('members').tag('shard', s[2]).uintField('value', s[0].reduce((members, guild) => members + guild.memberCount, 0)));
+	        points.push(new Point('servers').tag('shard', s[2]).uintField('value', s[0].length));
+	    });
+	    writeApi.writePoints(points);
+	    writeApi.flush();
         }
     });
 }
@@ -107,11 +114,14 @@ function updateMemory()
         results.forEach((r) => {
             memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'rss').uintField('value', r.rss));
             memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'arrayBuffers').uintField('value', r.arrayBuffers));
+            memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'heapTotal').uintField('value', r.heapTotal));
+            memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'heapUsed').uintField('value', r.heapUsed));
+            memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'external').uintField('value', r.external));
         });
+	// console.log(memPoints);
+	writeApi.writePoints(memPoints);
+	writeApi.flush();
     });
-
-    writeApi.writePoints(memPoints);
-    writeApi.flush();
 }
 
 const manager = new ShardingManager('./bot/bot.js', { 
