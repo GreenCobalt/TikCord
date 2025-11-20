@@ -1,7 +1,11 @@
-const ffmpeg = require('fluent-ffmpeg');
-const fs = require("fs");
 
+const fs = require("fs");
 const log = require("./log.js");
+
+const ffmpeg = require('ffmpeg');
+const ffprobe = require('node-ffprobe');
+const ffprobeStatic = require('ffprobe-static');
+ffprobe.FFPROBE_PATH = ffprobeStatic.path;
 
 const maxVideoSize = 8 * 1048576;
 
@@ -10,13 +14,13 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
     let max_audio_bitrate = 256000;
 
     return new Promise((res, rej) => {
-        ffmpeg.ffprobe(dir + videoInputPath, (err, probeOut) => {
-            if (err) { console.log(`FFPROBE COMPRESS ERROR ${err}`); rej(err); }
+        ffprobe(dir + videoInputPath).then((probeOut) => {
+            // if (err) { console.log(`FFPROBE COMPRESS ERROR ${err}`); rej(err); }
+            // console.log(probeOut);
 
             // too big
             if (probeOut.format.size > maxVideoSize) {
                 log.debug(`[${threadID}] Shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`);
-
                 let duration = probeOut.format.duration;
                 let audioBitrate = probeOut.streams[1].bit_rate;
                 let targetTotalBitrate = (targetSize * maxVideoSize) /* size in bits */ / (1.1 * duration);
@@ -33,24 +37,28 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
                 }
                 else
                 {
-                    ffmpeg(dir + videoInputPath, { logger: log })
-                        .outputOptions([
-                            '-b:v ' + videoBitrate,
-                            '-b:a ' + audioBitrate,
-                            '-preset ultrafast'
-                        ])
-                        .on('error', (err, stdout, stderr) => {
-                            console.log(`FFMPEG COMPRESS ERROR ${err}`);
-                            rej({err: err, send: false});
-                        })
-                        .on('end', () => {
+                    let ffmpeg_proc = new ffmpeg(dir + videoInputPath);
+                    ffmpeg_proc.then(function (video) {
+                        video.addCommand('-b:v', videoBitrate);
+                        video.addCommand('-b:a', audioBitrate);
+                        video.addCommand('-preset', 'ultrafast');
+                        video.save(dir + videoOutputPath, (error, file) => {
+                            if (error)
+                            {
+                                console.log(`FFMPEG COMPRESS ERROR ${error}`);
+                                rej({err: error, send: false});
+                            }
+
                             fs.unlinkSync(dir + videoInputPath);
-                            fs.stat(dir + videoOutputPath, (err, stats) => {
+                            fs.stat(file, (stat_error, stats) => {
                                 log.debug(`[${threadID}] Encode done (${stats.size / 1048576}MB) - pass ${pass}`);
-                                res(dir + videoOutputPath);
+                                res(file);
                             });
-                        })
-                        .save(dir + videoOutputPath);
+                        });
+
+                    }, function (err) {
+                        console.log('Error: ' + err);
+                    });
                 }
             } else {
                 //small enough
