@@ -119,7 +119,7 @@ function randomAZ(n = 5) {
     */
 }
 
-client.on('ready', () => {
+client.on('clientReady', () => {
     log.info(`Logged in as ${client.user.tag}!`);
 
     log.info(`Largest guilds:`);
