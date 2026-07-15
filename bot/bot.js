@@ -39,8 +39,9 @@ const userErrors = [
 ];
 
 const ramDisk = {
-    name: "/dev/shm/tikcord"
+    name: process.env.RAMDISK_LOCATION || "/dev/shm/tikcord"
 }
+
 if (!fs.existsSync(ramDisk.name)) fs.mkdirSync(ramDisk.name);
 settings.init();
 tiktok.init(ramDisk);
@@ -108,7 +109,7 @@ client.tiktokstats = {
 };
 
 function randomAZ(n = 5) {
-    return (Math.floor(Math.random()*90000) + 10000).toString();
+    return (Math.floor(Math.random() * 90000) + 10000).toString();
     /*
     return Array(n)
         .fill(null)
@@ -143,12 +144,12 @@ client.on('ready', () => {
 });
 
 client.on('guildCreate', async guild => {
-	log.info(`Added: ${guild.name} (${guild.memberCount} members)`)
+    log.info(`Added: ${guild.name} (${guild.memberCount} members)`)
 });
 
 client.on('guildDelete', async guild => {
     if (guild && guild.name)
-	    log.info(`Removed: ${guild.name} (${guild.memberCount} members)`)
+        log.info(`Removed: ${guild.name} (${guild.memberCount} members)`)
 });
 
 // slash command handle
@@ -223,7 +224,7 @@ client.on('interactionCreate', async interaction => {
             .setTitle(`✅ Ran garbage collector on shard ${shardId}`)
             .setColor('#004400')
             .setTimestamp();
-        interaction.reply({ embeds: [embed]});
+        interaction.reply({ embeds: [embed] });
     } else { }
 });
 
@@ -249,43 +250,46 @@ client.on('messageCreate', (message) => {
                 request(url, {
                     headers: {
                         //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.81 Safari/537.36"
-                    }   
+                    }
                 })
-                .then((resp) => {
-                    //log.info(`Redirect to ${resp.request.res.responseUrl}`);
-                    res(resp.request.res.responseUrl.split("?")[0]);
-                })
-                .catch((error) => {
-                    log.error(error);
-                    rej(`NOTFOUND`);
-                });
+                    .then((resp) => {
+                        //log.info(`Redirect to ${resp.request.res.responseUrl}`);
+                        res(resp.request.res.responseUrl.split("?")[0]);
+                    })
+                    .catch((error) => {
+                        log.error(error);
+                        rej(`NOTFOUND`);
+                    });
             } else {
                 res(rgx.groups.url.split("?")[0]);
             }
         }).then((url) => {
             log.info(`[${threadID}] Downloading ${url}`);
 
-            tiktok.getTikTokData(threadID, url)
+            // tiktok.getTikTokData(threadID, url)
+            Promise.resolve()
                 .then((data) => {
-                    log.info(`[${threadID}] API request done, type ${data[0]}`);
-                    // console.log(data);
-
+                    // log.info(`[${threadID}] API request done, type ${data[0]}`);
                     let promise;
-                    switch (data[0]) {
-                        case tiktok.VidTypes.Video:
-                            promise = tiktok.downloadVideo(threadID, url, data[1]);
-                            break;
-                        case tiktok.VidTypes.Slideshow:
-                            promise = tiktok.downloadSlide(threadID, url, data[1], data[2]);
-                            break;
-                        case tiktok.VidTypes.Invalid:
-                            promise = new Promise((res, rej) => { rej({err: data[1], send: data[2]}); });
-                            break;
-                        default:
-                            promise = new Promise((res, rej) => { rej({err: "BADTYPE (NH)", send: false}); });
-                            break;
-                    }
-		    global.gc && global.gc();
+
+                    // switch (data[0]) {
+                    //     case tiktok.VidTypes.Video:
+                    //         promise = tiktok.downloadVideo(threadID, url, data[1]);
+                    //         break;
+                    //     case tiktok.VidTypes.Slideshow:
+                    //         promise = tiktok.downloadSlide(threadID, url, data[1], data[2]);
+                    //         break;
+                    //     case tiktok.VidTypes.Invalid:
+                    //         promise = new Promise((res, rej) => { rej({err: data[1], send: data[2]}); });
+                    //         break;
+                    //     default:
+                    //         promise = new Promise((res, rej) => { rej({err: "BADTYPE (NH)", send: false}); });
+                    //         break;
+                    // }
+
+                    log.info(`[${threadID}] Skipped API request, assuming video...`);
+                    promise = tiktok.downloadVideoYTDLP(threadID, url, url);
+                    global.gc && global.gc();
 
                     promise
                         .then((resp) => {
@@ -309,7 +313,7 @@ client.on('messageCreate', (message) => {
                             }).catch((e_try1) => {
                                 if (
                                     e_try1.code == 50013 /* no permission to reply to message, try sending plain */ ||
-                                    e_try1.code == 50035 /* link message was deleted */ || 
+                                    e_try1.code == 50035 /* link message was deleted */ ||
                                     e_try1.code == 160002 /* no permission to reply due to message history */
                                 ) {
                                     message.channel.send({ files: [resp] }).then(() => {
@@ -348,13 +352,12 @@ client.on('messageCreate', (message) => {
                             });
                         })
                         .catch((e_dl) => { // tiktok video download failed
-                            if (e_dl.send)
-                            {
+                            if (e_dl.send) {
                                 message.reply(`Could not download video: ${e_dl.err}`).then(() => { }).catch((e_send) => {
                                     log.debug(`[${threadID}] Count not send video download failure message to channel: ${e_send.toString()}`);
                                 });
                             }
-                            
+
                             log.info(`[${threadID}] Could not download video (DL, sending message: ${e_dl.send}): ${e_dl.err}`);
 
                             if (!Object.keys(client.tiktokstats.dlFReasons).includes(e_dl.err)) client.tiktokstats.dlFReasons[e_dl.err] = 0;
@@ -365,14 +368,13 @@ client.on('messageCreate', (message) => {
                 })
                 .catch((e_api) => { // api request failed
                     let errString = `API ${e_api.err.response.status} ${e_api.err.response.statusText}`;
-                    
-                    if (e_api.send)
-                    {
+
+                    if (e_api.send) {
                         message.reply(`Could not download video: ${errString}`).then(() => { }).catch((e_send) => {
                             log.debug(`[${threadID}] Count not send video download failure message to channel: ${e_send.toString()}`);
                         });
                     }
-                    
+
                     log.info(`[${threadID}] Could not download video (API): ${errString}`); // axios error returned
 
                     if (!Object.keys(client.tiktokstats.dlFReasons).includes(errString)) client.tiktokstats.dlFReasons[errString] = 0;
@@ -381,14 +383,14 @@ client.on('messageCreate', (message) => {
                     if (!userErrors.includes(errString)) client.tiktokstats.dlF++;
                 });
         })
-        .catch((e_initialweb) => { // initial web request failed            
-            log.info(`[${threadID}] Could not download video (IR): ${e_initialweb.toString()}`);
+            .catch((e_initialweb) => { // initial web request failed            
+                log.info(`[${threadID}] Could not download video (IR): ${e_initialweb.toString()}`);
 
-            if (!Object.keys(client.tiktokstats.dlFReasons).includes(e_initialweb.toString())) client.tiktokstats.dlFReasons[e_initialweb.toString()] = 0;
-            client.tiktokstats.dlFReasons[e_initialweb.toString()]++;
+                if (!Object.keys(client.tiktokstats.dlFReasons).includes(e_initialweb.toString())) client.tiktokstats.dlFReasons[e_initialweb.toString()] = 0;
+                client.tiktokstats.dlFReasons[e_initialweb.toString()]++;
 
-            if (!userErrors.includes(e_initialweb.toString())) client.tiktokstats.dlF++;
-        });
+                if (!userErrors.includes(e_initialweb.toString())) client.tiktokstats.dlF++;
+            });
     }
 });
 

@@ -40,33 +40,72 @@ function getTikTokData(threadID, url) {
             method: 'get',
             url: `http://${api}/api/hybrid/video_data?url=${url}`
         })
-        .then(function (response) {
-            let result = response.data;
-            // log.debug(`[${threadID}] API Data Length ${JSON.stringify(result).length}`);
+            .then(function (response) {
+                let result = response.data;
+                // log.debug(`[${threadID}] API Data Length ${JSON.stringify(result).length}`);
 
-            if (Object.keys(result.data).includes("image_post_info")) {
-                let images = [];
-                result.data.image_post_info.images.forEach((img) => {
-                    images.push(img.display_image.url_list[0]);
-                });
-                res([VidTypes.Slideshow, images, result.data.music.play_url.url_list[0]]);
-            } else if (result.data.video.height > 0) {
-                res([VidTypes.Video, result.data.video.play_addr.url_list[0]]);
-            } else {
-                res([VidTypes.Invalid, "unknown video type!", false]);
-            }
-        })
-        .catch(function (error) {
-            rej({err: error, send: false});
-        });
+                if (Object.keys(result.data).includes("image_post_info")) {
+                    let images = [];
+                    result.data.image_post_info.images.forEach((img) => {
+                        images.push(img.display_image.url_list[0]);
+                    });
+                    res([VidTypes.Slideshow, images, result.data.music.play_url.url_list[0]]);
+                } else if (result.data.video.height > 0) {
+                    res([VidTypes.Video, result.data.video.play_addr.url_list[0]]);
+                } else {
+                    res([VidTypes.Invalid, "unknown video type!", false]);
+                }
+            })
+            .catch(function (error) {
+                rej({ err: error, send: false });
+            });
     });
+}
+
+const { YtDlp } = require('ytdlp-nodejs');
+const ytdlp = new YtDlp();
+
+async function downloadVideoYTDLP(threadID, ogURL, vidURL) {
+    if (vidURL == undefined) {
+        log.warn("vidURL is undefined!");
+        throw new Error({ err: "NOTFOUND", send: false });
+    } else {
+        let id = ogURL.split("?")[0].split("/")[5];
+        let dir = `${ramDisk.name}/videos/`;
+        let ogName = `${id}_${threadID}_encode.mp4`;
+        let pass1Name = `${id}_${threadID}_pass1.mp4`;
+
+        try {
+            // console.log(await ytdlp.getInfoAsync(vidURL));
+            const result = await ytdlp
+                .download(vidURL)
+                .setOutputTemplate(dir + ogName)
+                .format("mp4")
+                // .on('progress', (p) => console.log(`${p.percentage_str}`))
+                .run();
+        } catch (e) {
+            if (e.message.includes("Unsupported URL"))
+                throw { err: e.message.split(": http")[0], send: false };
+            throw { err: e, send: false };
+        };
+
+        log.info(`[${threadID}] Downloaded successfully to ${dir + ogName}`);
+
+        try {
+            const compressedName = await ffmpegutils.compressVideo(threadID, dir, ogName, pass1Name, 8, 1);
+            return compressedName;
+        } catch (e) {
+            fs.unlinkSync(dir + ogName);
+            throw e;
+        }
+    }
 }
 
 function downloadVideo(threadID, ogURL, vidURL) {
     return new Promise((res, rej) => {
         if (vidURL == undefined) {
             log.warn("vidURL is undefined!");
-            rej({err: "NOTFOUND", send: false});
+            rej({ err: "NOTFOUND", send: false });
         } else {
             let id = ogURL.split("?")[0].split("/")[5];
 
@@ -85,12 +124,10 @@ function downloadVideo(threadID, ogURL, vidURL) {
                         res(compressedName);
                     })
                     .catch((e) => {
-                        fs.unlinkSync(dir + ogName); // remove original file, it cannot be sent or compressed
-                        // fs.unlinkSync(dir + pass1Name); // do not remove encoded file, ffmpeg.js returned before ffmpeg was called
-
+                        fs.unlinkSync(dir + ogName);
                         rej(e);
                     });
-            }).catch((e) => { rej({err: e, send: false}); });
+            }).catch((e) => { rej({ err: e, send: false }); });
         }
     });
 }
@@ -171,9 +208,9 @@ function downloadSlide(threadID, ogURL, imageURLs, audioURL) {
                 }).catch((e) => { rej(e); });
             });
         }).catch((err) => {
-            rej({err: `a slideshow download Promise rejected: ${err.toString()}`, send: false});
+            rej({ err: `a slideshow download Promise rejected: ${err.toString()}`, send: false });
         });
     });
 }
 
-module.exports = { init, VidTypes, getTikTokData, downloadVideo, downloadSlide };
+module.exports = { init, VidTypes, getTikTokData, downloadVideo, downloadSlide, downloadVideoYTDLP };

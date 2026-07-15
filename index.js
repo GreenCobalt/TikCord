@@ -19,7 +19,7 @@ const sites = {
     }
 };
 
-const influxDB = new InfluxDB({'url': 'http://192.168.1.21:8086', 'token': 'wXKQn0zAxPTuqssBfYMJSj1mbSqAjiul2cAX7TXOGL-cK_eR3Gnf2Ok3mcfJQh9v0R5mSmRZo7guRjmn7o6wlA=='});
+const influxDB = new InfluxDB({ 'url': 'http://192.168.1.21:8086', 'token': 'wXKQn0zAxPTuqssBfYMJSj1mbSqAjiul2cAX7TXOGL-cK_eR3Gnf2Ok3mcfJQh9v0R5mSmRZo7guRjmn7o6wlA==' });
 const writeApi = influxDB.getWriteApi('snadol', 'tikcord');
 // writeApi.useDefaultTags({region: 'west'});
 
@@ -48,19 +48,21 @@ function updateServerCount() {
             //update bot listing sites
             if (sinceWebsiteUpdated > 9) {
                 Object.keys(sites).forEach((site) => {
-                    axios.post(site, {
-                        [sites[site].variable]: serverCount
-                    }, {
-                        headers: {
-                            'Authorization': sites[site].token
-                        }
-                    })
-                        .then((res) => {
-                            console.log(`Updated ${site}`);
+                    if (sites[site].token) {
+                        axios.post(site, {
+                            [sites[site].variable]: serverCount
+                        }, {
+                            headers: {
+                                'Authorization': sites[site].token
+                            }
                         })
-                        .catch((error) => {
-                            console.log(`Failed to send stats to ${site}: ${error}`);
-                        });
+                            .then((res) => {
+                                console.log(`Updated ${site}`);
+                            })
+                            .catch((error) => {
+                                console.log(`Failed to send stats to ${site}: ${error}`);
+                            });
+                    }
                 });
                 sinceWebsiteUpdated = 0;
             } else {
@@ -84,21 +86,20 @@ function updateServerCount() {
                     console.log(`Failed to send stats to mananger: ${error}`);
                 });
 
-	    let points = [];
-	    shards.forEach((s) => {
-		points.push(new Point('downloads').tag('shard', s[2]).tag('success', 1).uintField('value', s[1].dlS));
-		points.push(new Point('downloads').tag('shard', s[2]).tag('success', 0).uintField('value', s[1].dlF));
-	        points.push(new Point('members').tag('shard', s[2]).uintField('value', s[0].reduce((members, guild) => members + guild.memberCount, 0)));
-	        points.push(new Point('servers').tag('shard', s[2]).uintField('value', s[0].length));
-	    });
-	    writeApi.writePoints(points);
-	    writeApi.flush();
+            let points = [];
+            shards.forEach((s) => {
+                points.push(new Point('downloads').tag('shard', s[2]).tag('success', 1).uintField('value', s[1].dlS));
+                points.push(new Point('downloads').tag('shard', s[2]).tag('success', 0).uintField('value', s[1].dlF));
+                points.push(new Point('members').tag('shard', s[2]).uintField('value', s[0].reduce((members, guild) => members + guild.memberCount, 0)));
+                points.push(new Point('servers').tag('shard', s[2]).uintField('value', s[0].length));
+            });
+            writeApi.writePoints(points);
+            writeApi.flush();
         }
     });
 }
 
-function updateMemory()
-{
+function updateMemory() {
     let memPoints = [];
     manager.broadcastEval(() => {
         const memory = process.memoryUsage();
@@ -118,16 +119,23 @@ function updateMemory()
             memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'heapUsed').uintField('value', r.heapUsed));
             memPoints.push(new Point('memory').tag('shard', r.shardId).tag('type', 'external').uintField('value', r.external));
         });
-	// console.log(memPoints);
-	writeApi.writePoints(memPoints);
-	writeApi.flush();
+        // console.log(memPoints);
+        writeApi.writePoints(memPoints);
+        writeApi.flush();
     });
 }
 
+<<<<<<< HEAD
 const manager = new ShardingManager('./bot/bot.js', { 
     token: process.env.TOKEN, 
     totalShards: parseInt(process.env.SHARD_COUNT) ,
     execArgv: [ "--expose-gc", "--max-old-space-size=1536" ]
+=======
+const manager = new ShardingManager('./bot/bot.js', {
+    token: process.env.TOKEN,
+    totalShards: parseInt(process.env.SHARD_COUNT),
+    execArgv: ["--expose-gc"]
+>>>>>>> 855c01d1bcbfb7f65320472ab42c6d1e131a16b8
 });
 manager.spawn({
     delay: 500

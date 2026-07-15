@@ -4,3 +4,4 @@ settings/
 .env
 yt-dlp
 .DS_Store
+rd/
