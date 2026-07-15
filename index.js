@@ -125,17 +125,10 @@ function updateMemory() {
     });
 }
 
-<<<<<<< HEAD
-const manager = new ShardingManager('./bot/bot.js', { 
-    token: process.env.TOKEN, 
-    totalShards: parseInt(process.env.SHARD_COUNT) ,
-    execArgv: [ "--expose-gc", "--max-old-space-size=1536" ]
-=======
 const manager = new ShardingManager('./bot/bot.js', {
     token: process.env.TOKEN,
     totalShards: parseInt(process.env.SHARD_COUNT),
     execArgv: ["--expose-gc"]
->>>>>>> 855c01d1bcbfb7f65320472ab42c6d1e131a16b8
 });
 manager.spawn({
     delay: 500
