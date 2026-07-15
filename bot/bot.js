@@ -271,6 +271,7 @@ client.on('messageCreate', (message) => {
                 .then((data) => {
                     // log.info(`[${threadID}] API request done, type ${data[0]}`);
                     let promise;
+
                     // switch (data[0]) {
                     //     case tiktok.VidTypes.Video:
                     //         promise = tiktok.downloadVideo(threadID, url, data[1]);
@@ -288,6 +289,7 @@ client.on('messageCreate', (message) => {
 
                     log.info(`[${threadID}] Skipped API request, assuming video...`);
                     promise = tiktok.downloadVideoYTDLP(threadID, url, url);
+                    global.gc && global.gc();
 
                     promise
                         .then((resp) => {
