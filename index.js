@@ -127,7 +127,7 @@ function updateMemory()
 const manager = new ShardingManager('./bot/bot.js', { 
     token: process.env.TOKEN, 
     totalShards: parseInt(process.env.SHARD_COUNT) ,
-    execArgv: [ "--expose-gc" ]
+    execArgv: [ "--expose-gc", "--max-old-space-size=1536" ]
 });
 manager.spawn({
     delay: 500

@@ -285,6 +285,7 @@ client.on('messageCreate', (message) => {
                             promise = new Promise((res, rej) => { rej({err: "BADTYPE (NH)", send: false}); });
                             break;
                     }
+		    global.gc && global.gc();
 
                     promise
                         .then((resp) => {
