@@ -88,9 +88,9 @@ async function downloadVideoYTDLP(threadID, ogURL, vidURL) {
             {
                 let ytDlpErr = e.message.split("yt-dlp exited with code 1: ")[1];
                 if (/^\d/.test(ytDlpErr))
-                    ytDlpErr = ytDlpErr.split(":")[1];
+                    ytDlpErr = ytDlpErr.split(": ")[1];
                 if (ytDlpErr.startsWith("Unsupported URL"))
-                    ytDlpErr = ytDlpErr.split(":")[0]
+                    ytDlpErr = ytDlpErr.split(": ")[0]
                 throw { err: ytDlpErr, send: false };
             }
             throw { err: e, send: false };
