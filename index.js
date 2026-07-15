@@ -131,7 +131,7 @@ const manager = new ShardingManager('./bot/bot.js', {
     execArgv: ["--expose-gc"]
 });
 manager.spawn({
-    delay: 500
+    delay: 100
 }).then(() => {
     updateServerCount();
     updateMemory();
