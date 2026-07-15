@@ -287,7 +287,7 @@ client.on('messageCreate', (message) => {
                     //         break;
                     // }
 
-                    log.info(`[${threadID}] Skipped API request, assuming video...`);
+                    // log.info(`[${threadID}] Skipped API request, assuming video...`);
                     promise = tiktok.downloadVideoYTDLP(threadID, url, url);
                     global.gc && global.gc();
 

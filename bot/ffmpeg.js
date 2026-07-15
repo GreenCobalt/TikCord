@@ -22,7 +22,7 @@ function compressVideo(threadID, dir, videoInputPath, videoOutputPath, targetSiz
             if (probeOut.format.size > maxVideoSize) {
                 log.debug(`[${threadID}] Shrinking (${probeOut.format.size / 1048576}MB) - pass ${pass}`);
                 let duration = probeOut.format.duration;
-                let audioBitrate = probeOut.streams[1].bit_rate;
+                let audioBitrate = probeOut.streams[1]?.bit_rate || 0;
                 let targetTotalBitrate = (targetSize * maxVideoSize) /* size in bits */ / (1.1 * duration);
 
                 if (10 * audioBitrate > targetTotalBitrate) {
